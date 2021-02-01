@@ -149,6 +149,6 @@ div.notices p:first-child:before {
     left: 10px;
 }
 
-#chapter p, #chapter h3 {
+#chapter p {
     text-align: left;
 }
