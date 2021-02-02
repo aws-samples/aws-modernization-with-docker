@@ -1,5 +1,5 @@
 +++
-title = "Part 3: Securing your containers with AWS Secrets Manager"
+title = "Module 3: Secure your Containers with Docker and AWS Secrets Manager"
 chapter = true
 weight = 42
 +++

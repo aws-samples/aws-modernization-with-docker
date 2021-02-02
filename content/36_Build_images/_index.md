@@ -1,5 +1,5 @@
 +++
-title = "Part 2: Building images with Buildkit and deploying to ECS"
+title = "Module 2: Build a Container Image with Docker Buildkit and Deploy to Amazon ECS"
 chapter = true
 weight = 36
 +++

@@ -1,5 +1,5 @@
 +++
-title = "Part 1: Deploy Using Docker ECS integration"
+title = "Module 1: Deploy an Application Using the Docker Amazon ECS Plugin"
 chapter = true
 weight = 22
 +++
