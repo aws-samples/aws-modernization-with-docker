@@ -4,38 +4,21 @@ weight: 5
 chapter: true
 draft: false
 ---
-# Docker ECS Integration
+# Workshop Overview
 
-1. Deploy Using Docker ECS integration
-    - Docker Context Overview
-    - Create and Manage Contexts
-    - Deploy single application using ECS context
+## What is a container and how does Docker make managing and deploying containerized applications more efficient?
+A container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A Docker container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
 
-2. Build you own images with Buildkit and deploy to ECS
-    - Clone sample repo
-    - Application Overview
-    - Building Images using BuildKit
-    - Push images to hub
-    - Run locally
-    - Deploy to ecs
-    - Test app
-    - View logs
-    - View entities in aws console
-    - Scale Cluster
-    - Verify that we now have two backend services 
-    - Test app
-    - Teardown cluster
 
-3. Securing your containers with AWS Secrets Manager
-    - Refactor backend code to connect to MongoDB
-    - Change to private repo in hub
-    - Create secret on ecs with docker cli
-    - Use secret in compose file
-    - Run and Test locally
-    - Deploy to ECS
-    - Test app
-    - Teardown cluster
+## What is the difference between a virtual machine (VM) and a container?
+Containers and virtual machines have similar resource isolation and allocation benefits, but function differently because containers virtualize the operating system instead of hardware. Containers are more portable and efficient. To give us a better understanding of the differences between containers and virtual machines let's look at a comparison of the two. 
 
-4. Demonstrating ECS plugin for CI/CD using GitHub Actions
+### Virtual Machines (VM's)
+Virtual machines (VMs) are an abstraction of physical hardware turning one server into many servers. The hypervisor allows multiple VMs to run on a single machine. Each VM includes a full copy of an operating system, the application, necessary binaries and libraries - taking up tens of GBs. VMs can also be slow to boot. The diagram below gives a visual representation of what running a virtual machine would look like. 
 
-5. Collect Docker metrics with Prometheus
+![Docker](images/container-vm-whatcontainer_2.png)
+
+### Containers 
+Containers are an abstraction at the app layer that packages code and dependencies together. Multiple containers can run on the same machine and share the OS kernel with other containers, each running as isolated processes in user space. Containers take up less space than VMs (container images are typically tens of MBs in size), can handle more applications and require fewer VMs and Operating systems.
+
+![Docker](images/docker-containerized-appliction-blue-border_2.png)
