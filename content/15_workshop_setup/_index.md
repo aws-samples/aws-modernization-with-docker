@@ -8,8 +8,9 @@ weight = 10
 
 
 
-* AWS console
-* CLoud9 IDE Environment
+* AWS Console
+* Cloud9 IDE Environment
+
 
 
 ## Objectives of this section
