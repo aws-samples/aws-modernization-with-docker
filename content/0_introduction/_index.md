@@ -22,3 +22,5 @@ Virtual machines (VMs) are an abstraction of physical hardware turning one serve
 Containers are an abstraction at the app layer that packages code and dependencies together. Multiple containers can run on the same machine and share the OS kernel with other containers, each running as isolated processes in user space. Containers take up less space than VMs (container images are typically tens of MBs in size), can handle more applications and require fewer VMs and Operating systems.
 
 ![Docker](images/docker-containerized-appliction-blue-border_2.png)
+
+The question should be not be whether you should use containers or virtual machines but rather how can you utilize both to provide more flexibility in deploying and managing your applications. In the next section, we will dive into Dockers architecture and talk about the various components that have made Docker the most popular solution for building, managing, and deploying containerized applications.
