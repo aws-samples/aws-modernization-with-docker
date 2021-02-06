@@ -10,17 +10,17 @@ weight = 10
  One of the key reasons why Docker has been an industry leader in the containers space is that Docker creates simple tooling and a universal packaging approach that bundles up all application dependencies inside a container which is then run on Docker Engine.
 
 ### What is the Docker Engine?
-The Docker Engine enables containerized applications to run anywhere consistently on any infrastructure, solving dependency issues for developers and operations teams, and eliminating the “it works on my laptop!” problem. The Docker Engine encompasses a full set of features and tools to help users be as efficient as possible when working with containers. The three key features and capabilities that is offered through Docker Engine can be summarized as follows:
+The Docker Engine enables containerized applications to run anywhere consistently on any infrastructure, solving dependency issues for developers and operations teams, and eliminating the “it works on my laptop!” problem. The Docker Engine encompasses a full set of features and tools to help users be as efficient as possible when working with containers. The three key features and capabilities that is powered by the Docker Engine can be summarized as follows:
 
-- Powered by containerd which is an industry-standard container runtime with an emphasis on simplicity, robustness, and portability
+- Powered by **containerd** which is an industry-standard container runtime with an emphasis on simplicity, robustness, and portability
 
-- Integration with Buildkit which is Dockers most used feature of the Docker Engine. Docker Buildkit is primarily used to build images from a Dockerfile (we will dive deeper into this in Module 2)
+- Integration with **Buildkit** which is Dockers most used feature of the Docker Engine. Docker Buildkit is primarily used to build images from a Dockerfile (we will dive deeper into this in Module 2)
 
-- Simplicity and accessibility of the Docker CLI which will be highlighted all throughout this workshop
+- Simplicity and accessibility of the **Docker CLI** which will be highlighted all throughout this workshop
 
 In terms of bringing immediate business value, the Docker Engine helps businesses of all sizes achieve the following three benefits:
 
-- Accelerated innovation as Docker Engine forms the common foundation underlying the Docker Enterprise platform, allowing developers and operators to turn ideas into reality quickly and securely by providing the ability to develop and ship code faster and more efficiently. 
+- Accelerates innovation as Docker Engine forms the common foundation underlying the Docker Enterprise platform, allowing developers and operators to turn ideas into reality quickly and securely by providing the ability to develop and ship code faster and more efficiently. 
 
 - Gives developer and operations teams the freedom of choice as the Docker Engine supports any type of application. Legacy applications, cloud-native, monolithic, 12-factor applications and even works with multiple operating systems across all cloud providers. The Docker Engine is also validated to work with Kubernetes CRI. 
 

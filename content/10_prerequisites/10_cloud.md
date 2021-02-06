@@ -15,55 +15,63 @@ the EKS IAM authentication, so we will disable it and rely on the IAM role inste
 - Close the Preferences tab
 ![c9disableiam](/images/c9disableiam.png)
 
-To ensure temporary credentials aren't already in place we will also remove
-any existing credentials file:
-```sh
-rm -vf ${HOME}/.aws/credentials
-```
-Install jq - jq is a command-line tool for parsing JSON.
-```sh
-sudo yum install jq
-```
-We should configure our aws cli with our current region as default.
+## Configure workspace for Docker Workshop
 
 {{% notice info %}}
-If you are [at an AWS event](https://eksworkshop.com/020_prerequisites/aws_event/), ask your instructor which **AWS region** to use.
+Cloud9 normally manages IAM credentials dynamically. This isn't currently compatible with
+the EKS IAM authentication, so we will disable it and rely on the IAM role instead.
 {{% /notice %}}
 
-```sh
-export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
-export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
-```
+1. Return to your workspace and click the gear icon (in top right corner), or click to open a new tab and choose "Open Preferences"
 
-Check if AWS_REGION is set to desired region
+2. Select **AWS SETTINGS** and turn off **AWS managed temporary credentials**
+
+3. Close the Preferences tab
+
+   <img src=/images/10_prerequisites/iamRoleWorkspace.gif width="100%" >
+
+4. Copy and run (paste with **Ctrl+P**) the commands below.
+
+   Before running it, review what it does by reading through the comments.
+
+
 ```sh
+# Update awscli
+sudo pip install --upgrade awscli && hash -r
+
+# Install jq command-line tool for parsing JSON, and bash-completion
+sudo yum -y install jq gettext bash-completion moreutils
+
+# Install yq for yaml processing
+echo 'yq() {
+docker run --rm -i -v "${PWD}":/workdir mikefarah/yq yq "$@"
+}' | tee -a ~/.bashrc && source ~/.bashrc
+
+# Verify the binaries are in the path and executable
+for command in jq aws
+do
+  which $command &>/dev/null && echo "$command in path" || echo "$command NOT FOUND"
+done
+
+# Remove existing credentials file.
+rm -vf ${HOME}/.aws/credentials
+
+# Set the ACCOUNT_ID and the region to work with our desired region
+export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
-```
- 
-Let's save these into bash_profile
-```sh
+
+# Configure .bash_profile
+export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
-echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
+echo "export AWS_REGION=${AWS_REGION}" |
+tee -a ~/.bash_profile
 aws configure set default.region ${AWS_REGION}
 aws configure get default.region
+
+# Validate that our IAM role is valid.
+aws sts get-caller-identity --query Arn | grep docker-workshop -q && echo "IAM role valid" || echo "IAM role NOT valid"
 ```
 
-### Validate the IAM role
-
-Use the [GetCallerIdentity](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html) CLI command to validate that the Cloud9 IDE is using the correct IAM role.
-
-```
-aws sts get-caller-identity --query Arn | grep Pulumi-Workshop-Admin -q && echo "IAM role valid" || echo "IAM role NOT valid"
-```
-
-<!--
-First, get the IAM role name from the AWS CLI.
-```bash
-INSTANCE_PROFILE_NAME=`basename $(aws ec2 describe-instances --filters Name=tag:Name,Values=aws-cloud9-${C9_PROJECT}-${C9_PID} | jq -r '.Reservations[0].Instances[0].IamInstanceProfile.Arn' | awk -F "/" "{print $2}")`
-aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME --query "InstanceProfile.Roles[0].RoleName" --output text
-```
--->
-
+{{% notice warning %}}
 If the IAM role is not valid, <span style="color: red;">**DO NOT PROCEED**</span>. Go back and confirm the steps on this page.
-
-If youv'e reached the end of this section you can skip to the [**Workshop Setup**](/15_workshop_setup/50_workshop_setup.html) section.
+{{% /notice %}}
