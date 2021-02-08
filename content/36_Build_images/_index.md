@@ -5,7 +5,7 @@ weight = 36
 +++
 # Building images with Buildkit and deploying to ECS
 
-In the first module we took a look at building a simple compose file and using that to deploy a simple webser using NGINX. In this module we'll take a look at building our images with BuildKit, Pushing those Docker Hub and then deploying to ECS using a compose file. We'll also take a look at scalling the service and reading logs all using our compose file and `docker compose` commands.
+In the first module we took a look at building a simple compose file and using that to deploy a simple webser using NGINX. In this module we'll take a look at building our images with BuildKit, Pushing those Docker Hub and then deploying to ECS using a compose file. We'll also take a look at scaling the service and reading logs all using our compose file and `docker compose` commands.
 
 ## Sample application overview
 
@@ -60,7 +60,7 @@ Also have a look at the Dockerfile for each project. You'll find then in the roo
 
 ### Building images using BuildKit
 
-Now let's build our images. We'll use BuildKit and `docker-compose`. BuildKit is a [Moby project](https://docs.docker.com/develop/develop-images/build_enhancements/) that is include in the Docker distrubution and brings improved caching, parralel builds and more. For local builds, `docker-compose` is a convienent way to build images without having to type out long `docker build` commands in the terminal.
+Now let's build our images. We'll use BuildKit and `docker-compose`. BuildKit is a [Moby project](https://docs.docker.com/develop/develop-images/build_enhancements/) that is included in the Docker distrubution and brings improved caching, parralel builds and more. For local builds, `docker-compose` is a convienent way to build images without having to type out long `docker build` commands in the terminal.
 
 ECS does not have the concept of building images. So we need to make sure we are using the `default` context which points to your local Docker Engine.
 

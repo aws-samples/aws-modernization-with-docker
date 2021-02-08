@@ -29,14 +29,21 @@ Create a Cloud9 Environment: [https://us-east-1.console.aws.amazon.com/cloud9/ho
 Make sure you are naming your Cloud9 environment `Docker-Workshop`, otherwise things will break later.
 {{% /notice %}}
 
-- Select **Create environment**
-- Name it **Docker-Workshop**, and take all other defaults
-- When it comes up, customize the environment by closing the **welcome tab**
-and **lower work area**, and opening a new **terminal** tab in the main work area:
-![c9before](/images/c9before.png)
+1. Select **Create environment**
+2. Name it **Docker-Workshop** and click **Next Step**
+3. Use the following table for the configuration:
 
-- Your workspace should now look like this:
-![c9after](/images/c9after.png)
+    |    Environment Setting   |   Value    |
+    |----------|--------------------|
+    | Envrionment Type | (Leave as default)|
+    | Instance Type | t3.medium |
+    | Platform | (Leave as default)|
+    | Cost-Saving settings | (Leave as default)|
+    | IAM Role | (Leave as default) |
+4. Click **Next Step** and then  **Create Environment**
+5.  When it comes up, customize the environment by closing the **welcome tab**
+and **lower work area**, and opening a new **terminal** tab in the main work area. Your workspace should now look like this:
+![create-workspace](/images/create-workspace.png)
 
 - If you like this theme, you can choose it yourself by selecting **View / Themes / Solarized / Solarized Dark**
 in the Cloud9 workspace menu.
