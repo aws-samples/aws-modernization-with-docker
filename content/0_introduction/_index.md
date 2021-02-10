@@ -6,8 +6,10 @@ draft: false
 ---
 # Workshop Overview
 
-## What is a container and how does Docker make managing and deploying containerized applications more efficient?
-A container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A Docker container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
+Before we get into the in's and out's of using Docker, let's set the foundation for understanding why Docker is a leader in the Containerization space. In this section we will discuss the differences between virtual machines and containers to provide more context for this workshop. 
+
+## What is a container and how does using containers make managing and deploying applications more efficient?
+A container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
 
 
 ## What is the difference between a virtual machine (VM) and a container?
@@ -24,3 +26,4 @@ Containers are an abstraction at the app layer that packages code and dependenci
 ![Docker](images/docker-containerized-appliction-blue-border_2.png)
 
 The question should be not be whether you should use containers or virtual machines but rather how can you utilize both to provide more flexibility in deploying and managing your applications. In the next section, we will dive into Dockers architecture and talk about the various components that have made Docker the most popular solution for building, managing, and deploying containerized applications.
+
