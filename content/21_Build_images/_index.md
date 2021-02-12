@@ -1,7 +1,7 @@
 +++
 title = "Module 2: Build a Container Image with Docker Buildkit and Deploy to Amazon ECS"
 chapter = true
-weight = 36
+weight = 21
 +++
 # Building images with Buildkit and deploying to ECS
 
