@@ -25,5 +25,16 @@ Containers are an abstraction at the app layer that packages code and dependenci
 
 ![Docker](images/docker-containerized-appliction-blue-border_2.png)
 
-The question should be not be whether you should use containers or virtual machines but rather how can you utilize both to provide more flexibility in deploying and managing your applications. In the next section, we will dive into Dockers architecture and talk about the various components that have made Docker the most popular solution for building, managing, and deploying containerized applications.
+### Summary
+The main take away here is that by **abstracting** away the heavy lifting of application and hardware dependencies in order for you to be effective as a developer you gain the following benefits:
+
+1. Improved efficieny
+2. Increased productivity
+3. Simplified transactions
+4. Reduced costs
+5. Increased agility 
+
+The question should also not be whether you should use containers or virtual machines but rather how can you utilize both to provide more flexibility in deploying and managing your applications. The main goal should be to increase agility for your developer teams and realistically speaking organizations need to understand how to utilize both in order to achieve these goals. 
+
+In the next section, we will dive into Dockers architecture and talk about the various components that have made Docker the most popular solution for building, managing, and deploying containerized applications.
 
