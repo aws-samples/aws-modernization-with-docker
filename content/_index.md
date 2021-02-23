@@ -4,7 +4,7 @@ chapter: true
 weight: 1
 ---
 
-# Container Best Pracitces with Docker and AWS
+# Application Modernization with Docker and AWS 
 
 ![Docker] (/images/docker-cloud-twitter-card.png)
 
