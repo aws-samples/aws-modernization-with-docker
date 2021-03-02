@@ -3,9 +3,64 @@ title = "Module 1: Build a Container Image with Docker Buildkit and Deploy to Am
 chapter = true
 weight = 21
 +++
-# Building images with Buildkit and deploying to ECS
 
-In the first module we took a look at building a simple compose file and using that to deploy a simple webser using NGINX. In this module we'll take a look at building our images with BuildKit, Pushing those Docker Hub and then deploying to ECS using a compose file. We'll also take a look at scaling the service and reading logs all using our compose file and `docker compose` commands.
+# Building images with Buildkit and deploying to Amazon ECS
+
+In this module we will look at building a simple Docker Compose file and using that file to deploy a simple webserver using NGINX. We will be building our images with Docker BuildKit which will then be pushed to Docker Hub as our image repository of choice for this module. The final step will be to deploy our image to Amazon ECS using the same Docker Compose file. 
+We'll also take a look at scaling the service and reading logs all using our compose file and `docker compose` commands.
+
+Before we do that, let's take a look at what a container image is specifically and how images are used in order to build our applications to help give us a better understanding of what a Dockerfile, Compose file, and other various methods for building container images. 
+
+## What is a container image?
+A container image is a read-only template with instructions for creating a container. The image contains the code that will run including any definitions for any libraries and dependencies that your code needs to run. Often, an image is based on another image with some additional customization. It is important to note that these images are not just one monolithic block, but are composed of **many layers**.
+
+## Dockerfiles and Docker images
+Now that we understand the general concepts around what a container image is, let's dive into how this applies to Docker images that can also be known as a Dockerfile. Just like the container image we mentioned above, Dockerfiles and Docker images also provide a portable runtime application environment, package applications and dependencies in a single, immutable artifact, gives users the option to run different application versions simultaneously, and gives faster development and deployment cycles. 
+
+## Layered Architecture of Docker Container Images 
+Docker container images follow what is known as a layered architecture. Below is an example of a basic Dockerfile and to demonstrate let's break down what a layered architecture actually means. A Docker image is built up from a series of layers. Each layer represents an instruction in the image’s Dockerfile. Each layer except the very last one is read-only. Consider the following Dockerfile:
+
+```
+FROM ubuntu:18.04
+COPY . /app
+RUN make /app
+CMD python /app/app.py
+```
+This Dockerfile contains four commands, each of which creates a layer. The FROM statement starts out by creating a layer from the ubuntu:18.04 image. The COPY command adds some files from your Docker client’s current directory. The RUN command builds your application using the make command. Finally, the last layer specifies what command to run within the container.
+
+Each layer is only a set of differences from the layer before it. The layers are stacked on top of each other. When you create a new container, you add a new writable layer on top of the underlying layers. This layer is often called the “container layer”. All changes made to the running container, such as writing new files, modifying existing files, and deleting files, are written to this thin writable container layer. The diagram below shows a container based on the Ubuntu 15.04 image.
+
+![Docker](/images/container-layers.jpg)
+
+What would happen if you were to change something in the Dockerfile and rebuilt the image? One of the major benefits of using Dockerfiles to build you container images is that only the **modified layers** get rebuilt. This is what makes container images lightweight, small, and fast compared to other virtualization technologies. 
+
+## Container Registries 
+In the sections above, we have defined what a container image is, how to build containers from those images, and how Dockerfiles make creating container images easier for users. Examples of container registries are DockerHub, Amazon ECR, and GitHub Images. In order for users to be able to share and store images, container registries are vital for being able to share images between teams 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Sample application overview
 
