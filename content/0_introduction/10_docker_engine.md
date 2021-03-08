@@ -3,7 +3,7 @@ title = "Docker Engine"
 chapter = false
 weight = 10
 +++
-(insert image)
+
 
  In the previous section, we set the foundation for understanding what a container is along with understanding some of the key differences between virtual machines and containers. In this section, we will do a deep dive into specifically how Docker simplifies the process of building and deploying containers. 
 
@@ -46,3 +46,5 @@ To learn more about some of the different technologies mentioned in this section
 - https://containerd.io/ - To learn more about containerd
 - https://docs.docker.com/engine/ - Documentation to learn more about Docker Engine
 - https://docs.docker.com/develop/develop-images/build_enhancements/ - Start up guide for using Docker Buildkit
+
+In the next section we will learn about what a container image is and how this will help us to understand what a Docker image is. 
