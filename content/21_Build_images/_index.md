@@ -1,87 +1,48 @@
 +++
-title = "Module 1: Build a Container Image with Docker Buildkit and Deploy to Amazon ECS"
+title = "Module 1: Build a Container Image with Docker Buildkit"
 chapter = true
 weight = 21
 +++
 
-# Building images with Buildkit and deploying to Amazon ECS
+# Building Container Images with Docker Buildkit and Compose
 
-In this module we will look at building a simple Docker Compose file and using that file to deploy a simple webserver using NGINX. We will be building our images with Docker BuildKit which will then be pushed to Docker Hub as our image repository of choice for this module. The final step will be to deploy our image to Amazon ECS using the same Docker Compose file. 
-We'll also take a look at scaling the service and reading logs all using our compose file and `docker compose` commands.
+**Estimated Completion Time: 30 minutes - 1 hour**
 
-Before we do that, let's take a look at what a container image is specifically and how images are used in order to build our applications to help give us a better understanding of what a Dockerfile, Compose file, and other various methods for building container images. 
+### Introduction
 
-## What is a container image?
-A container image is a read-only template with instructions for creating a container. The image contains the code that will run including any definitions for any libraries and dependencies that your code needs to run. Often, an image is based on another image with some additional customization. It is important to note that these images are not just one monolithic block, but are composed of **many layers**.
+In this module we will learn how to build our own container images using the Docker Compose CLI tool, Docker Buildkit, and Docker Hub. We will also learn how to utilize Docker Compose files to help build our application. We will then test our application locally to see that it works. Let's discuss what Docker Compose is all about to help us understand the rest of this module. 
 
-## Dockerfiles and Docker images
-Now that we understand the general concepts around what a container image is, let's dive into how this applies to Docker images that can also be known as a Dockerfile. Just like the container image we mentioned above, Dockerfiles and Docker images also provide a portable runtime application environment, package applications and dependencies in a single, immutable artifact, gives users the option to run different application versions simultaneously, and gives faster development and deployment cycles. 
+## Docker Compose
+![Docker](/images/docker-compose.png)
+So far, we have learned that we can use Dockerfiles to build our container images for **single container applications** but what do we do if we have an application that requires **multiple container images** to run properly? This is where Docker Compose comes in. 
 
-## Layered Architecture of Docker Container Images 
-Docker container images follow what is known as a layered architecture. Below is an example of a basic Dockerfile and to demonstrate let's break down what a layered architecture actually means. A Docker image is built up from a series of layers. Each layer represents an instruction in the image’s Dockerfile. Each layer except the very last one is read-only. Consider the following Dockerfile:
+Docker Compose is a tool for defining and running multi-container Docker applications. With Docker Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration file. Examples would be adding a database or a caching mechansim for your application. We will learn how to utililze these specific mechanisms in Module 2. 
+
+## How does Docker Compose files differ from Dockerfiles?
+Users that are new to containers and Docker can get really confused on when and where to use Dockerfiles and Docker Compose files. While there are situations where you could use one or the other, it really comes down to the complexity of your application you plan on deploying. In modern applications, it is very common to see applications use **both**. What this means is that you can have a Docker Compose file that will rely on a Dockerfile in order to build your application. In this section, we will learn how to utilize both in building our application so if this does not make sense at this moment, it certainly will by the end of this module. 
+
+## Sample Application Overview
+
+The application that we will use for this module is made up of a React.js frontend and a Node.js backend which will all be hosted on a webserver created by NGINX. The source code for our sample application is located on GitHub. Login to your GitHub account, and clone the repo: https://github.com/pmckeetx/aws-docker-workshop.git. and change into directory with all the code we will be using in this module. 
 
 ```
-FROM ubuntu:18.04
-COPY . /app
-RUN make /app
-CMD python /app/app.py
+$ git clone https://github.com/pmckeetx/aws-docker-workshop.git.
 ```
-This Dockerfile contains four commands, each of which creates a layer. The FROM statement starts out by creating a layer from the ubuntu:18.04 image. The COPY command adds some files from your Docker client’s current directory. The RUN command builds your application using the make command. Finally, the last layer specifies what command to run within the container.
-
-Each layer is only a set of differences from the layer before it. The layers are stacked on top of each other. When you create a new container, you add a new writable layer on top of the underlying layers. This layer is often called the “container layer”. All changes made to the running container, such as writing new files, modifying existing files, and deleting files, are written to this thin writable container layer. The diagram below shows a container based on the Ubuntu 15.04 image.
-
-![Docker](/images/container-layers.jpg)
-
-What would happen if you were to change something in the Dockerfile and rebuilt the image? One of the major benefits of using Dockerfiles to build you container images is that only the **modified layers** get rebuilt. This is what makes container images lightweight, small, and fast compared to other virtualization technologies. 
-
-## Container Registries 
-In the sections above, we have defined what a container image is, how to build containers from those images, and how Dockerfiles make creating container images easier for users. Examples of container registries are DockerHub, Amazon ECR, and GitHub Images. In order for users to be able to share and store images, container registries are vital for being able to share images between teams 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Sample application overview
-
-The application that we will use for this module is made up of a React.js frontend and a Node.js backend. We will also take a look at persiting data using mongodb and volumes.
-
-### Clone application sample application
-
-The source code for our sample application is located on GitHub. Login to your GitHub account, and fork the repo: https://github.com/pmckeetx/aws-docker-workshop. Once you have forked the repo, clone it to your local machine.
-
-> **NOTE**: _Replace **`[github-user-account]`** with your GitHub account in the command below._
 ```
-$ git clone git@github.com:[github-user-account]/aws-docker-workshop.git
+cd ~/environment/aws-docker-workshop
 ```
 
-## Build images and run locally
+If you were able to follow the directions above your Cloud9 file directory should look like the following:
 
-Now that we have our sample application locally, let's build the images and then push those to Docker Hub. 
+(insert screenshot)
 
-### Compose
+## Build images and push to Docker Hub
 
-In your terminal, navigate to the root directory of the sample application and open the `docker-compose.yml` file in your favorite text editor.
+Now that we have successfully cloned the repo with all of the code and files we will need for our application, let's walk through how to use the docker-compose files to build our images. 
+
+(insert Cloud9 image)
+
+In your Cloud9 you will see a `docker-compose.yml` file, and open the `docker-compose.yml` file and let's figure out what this file is doing. 
 
 ```
 version: '3.8'
@@ -109,15 +70,19 @@ networks:
   backend:
 ```
 
-Let's take a minute and walk through the compose file. As you can see above, we have two services: `frontend` and `backend`. The `frontend` services is our React.js app and is located in the `./frontend` directory. The `backend` services is our Node.js REST api and is located in the `./backend` directory. We tell Docker what to name our images by setting the `image` property and what ports to expose using the `ports` property. If you want to learn more about compose files and the compose spec, please read our [documentation](https://docs.docker.com/compose/) and the [compose spec](https://compose-spec.io/).
+As you can see above, we have two services: `frontend` and `backend`. The `frontend` services is our React.js app and is located in the `./frontend` directory. The `backend` services is our Node.js REST api and is located in the `./backend` directory. We tell Docker what to name our images by setting the `image` property and what ports to expose using the `ports` property. 
 
 Also have a look at the Dockerfile for each project. You'll find then in the root of `./frontend` and `./backend`. 
 
-### Building images using BuildKit
+(insert Cloud9 image)
 
-Now let's build our images. We'll use BuildKit and `docker-compose`. BuildKit is a [Moby project](https://docs.docker.com/develop/develop-images/build_enhancements/) that is included in the Docker distrubution and brings improved caching, parralel builds and more. For local builds, `docker-compose` is a convienent way to build images without having to type out long `docker build` commands in the terminal.
+What you'll notice is that both the frontend and backend directories have their own respective Dockerfiles. Earlier in this module we mentioned that Docker Compose files and Dockerfiles can be used together in order to build your applications. In the next step, we will build our image using the ```docker-compose.yml``` file and we'll see how it makes calls to the Dockerfiles that live inside the frontend and backend directories to build our application. 
 
-ECS does not have the concept of building images. So we need to make sure we are using the `default` context which points to your local Docker Engine.
+## Building images using Docker BuildKit
+
+Now let's build our images. We'll use Docker BuildKit and the `docker-compose` CLI to do so. 
+
+Docker BuildKit is a [Moby project](https://docs.docker.com/develop/develop-images/build_enhancements/) that is included in the Docker distrubution and brings improved caching, parralel builds, and more. For local builds, `docker-compose` is a convienent way to build images without having to type out long `docker build` commands in the terminal.
 
 ```
 $ docker context use default
@@ -161,7 +126,7 @@ REPOSITORY             TAG       IMAGE ID       CREATED         SIZE
 [your-docker-id]/crud-backend    1.0.0     a35afae78437   31 hours ago    950MB
 ```
 
-### Run the application locally
+## Run the application locally
 
 At this point, we've forked and clone the sample application. We took a look at the `docker-compose.yml` to see how our application is configured. Now let's run the application locally using `docker-compose`.
 
@@ -179,9 +144,9 @@ frontend_1  | /docker-entrypoint.sh: Configuration complete; ready for start up
 backend_1   | Listening on port 8080 
 ```
 
-Open your favorite browser and navigate to http://localhost. You'll see the following screen:
+Open your favorite browser and navigate to http://localhost:80. You'll see the following screen:
 
-![app](./assets/mod_02_crud_basic.png)
+![app](/images/docker-module1.png)
 
 Let's make sure our application is running properly.
 
@@ -196,34 +161,17 @@ Let's make sure our application is running properly.
 4. Click the "Save" button.
 5. Scroll to the bottom of the page and view the results in the table.
 
-![results](./assets/mod_02_crud_basic_result.png)
+![results](/images/docker-module1-result.png)
 
-BOOM!
+As you can see, we were succesfully able to create a new record in our app which means that our application was built succesfully using Docker Compose and BuildKit. 
 
-## Deploy to ECS
+### Summary 
 
-Now that we have our application images built and running locally, let's take a look at deploying to ECS. To do that, we first need to login to Hub and then push our images so ECS can pull them when we start our cluster.
+In this module we learned how to build and run an application locally using Docker Compose and BuildKit. We also learned the following:
 
-Login to Docker Hub:
-```
-$ docker login -u [docker-id]
-Password:
-Login Succeeded
-```
+- How to differntiate Dockerfiles and ```docker-compose.yml``` files and that we can actually use them together in order to build and run our applications. 
+- How to build and push our container images to Docker Hub using the Docker Compose CLI
+- Building a container image using Docker BuildKit
 
-Push images:
-```
-$ docker-compose push
-Pushing frontend (pmckee/crud-frontend:1.0.0)...
-The push refers to repository [docker.io/pmckee/crud-frontend]
-8553117c6d52: Pushed
-...
-1.0.0: digest: sha256:74e6dbb7cf532e80671a563b09fdf66e21f45e8a8cb59bd09fb7f92fd7638e8a size: 1779
-Pushing backend (pmckee/crud-backend:1.0.0)...
-The push refers to repository [docker.io/pmckee/crud-backend]
-24895a18ac22: Pushed
-...
-1.0.0: digest: sha256:ff5e43009b57e721b099e1c803feefd7aae1a5978d14c8b04c3d392023e1d328 size: 3260
-```
+In the next section, we will take everything we learned in this module a step further and deploy an application to Amazon ECS adding additional complexity to our compose files using the Docker Compose CLI features built by both Docker and AWS. 
 
-Compose will read the `docker-compose.yml` file to find the names of the images you would like to push and then push those to Hub.

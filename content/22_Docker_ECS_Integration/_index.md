@@ -200,3 +200,33 @@ $ docker compose down
 ```
 
 Next we'll take a look at deploying a more complex application and dig into the resources that are created.
+
+### Ported over from Module 1
+
+## Deploy to ECS
+
+Now that we have our application images built and running locally, let's take a look at deploying to ECS. To do that, we first need to login to Hub and then push our images so ECS can pull them when we start our cluster.
+
+Login to Docker Hub:
+```
+$ docker login -u [docker-id]
+Password:
+Login Succeeded
+```
+
+Push images:
+```
+$ docker-compose push
+Pushing frontend (pmckee/crud-frontend:1.0.0)...
+The push refers to repository [docker.io/pmckee/crud-frontend]
+8553117c6d52: Pushed
+...
+1.0.0: digest: sha256:74e6dbb7cf532e80671a563b09fdf66e21f45e8a8cb59bd09fb7f92fd7638e8a size: 1779
+Pushing backend (pmckee/crud-backend:1.0.0)...
+The push refers to repository [docker.io/pmckee/crud-backend]
+24895a18ac22: Pushed
+...
+1.0.0: digest: sha256:ff5e43009b57e721b099e1c803feefd7aae1a5978d14c8b04c3d392023e1d328 size: 3260
+```
+
+Compose will read the `docker-compose.yml` file to find the names of the images you would like to push and then push those to Hub.
