@@ -4,6 +4,18 @@ chapter = true
 weight = 22
 +++
 
+# Deploy an Application Using the Docker Amazon ECS Plugin
+
+**Estimated Completion Time: 1 Hour**
+
+### **Introduction**
+In this section, we will learn about the Docker Amazon ECS plugin that allows the ability for users to deploy their Docker applications directly to Amazon ECS using the Docker Compose CLI. We will also learn about Docker Contexts and how we can use contexts to manage our applications. You will also notice that the ```docker-compose.yml``` files have additional components that we will be using to deploy our application for this module. We will also dive into what these additional components are and how they can help us build our application using AWS and Docker best practices. 
+
+## Docker Amazon ECS Plugin
+The integration between Docker Compose and Amazon ECS allows users to deploy Compose applications to ECS simply using the Docker command line. The Docker Compose ECS integration relies on CloudFormation to manage AWS resources as an atomic operation. What this means is that when you deploy a Compose application to ECS, it will generate a CloudFormation template under the hood. 
+
+
+This provides an additional benefit for users deploying their application to ECS as you have the ability to take the CloudFormation and modify or add addtional components as needed. 
 
 ## Docker Context
 Ability to point to container runtime and deploy your apps using the docker commands you already know docker compose up, down, ps
@@ -26,12 +38,6 @@ Create a new context
 
 Create docker engine context:
 $ docker context create CONTEXT [flags]
-
-
-Create Azure Container Instances context:
-$ docker context create aci CONTEXT [flags]
-(see docker context create aci --help)
-
 
 Create Amazon ECS context:
 $ docker context create ecs CONTEXT [flags]
