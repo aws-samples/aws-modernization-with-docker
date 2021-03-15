@@ -1,10 +1,10 @@
 +++
-title = "Module 3: CI/CD with GitHub Actions"
+title = "Module 4"
 chapter = true
 weight = 23
 +++
 
-# CI/CD with GitHub Actions
+# CI/CD with GitHub Actions and Docker Compose
 
 **Estimated Completion Time: 1 Hour**
 
