@@ -1,7 +1,7 @@
 +++
 title = "Module 3: CI/CD with GitHub Actions"
 chapter = true
-weight = 42
+weight = 23
 +++
 
 # CI/CD with GitHub Actions
