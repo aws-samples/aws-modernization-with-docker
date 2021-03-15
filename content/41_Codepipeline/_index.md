@@ -1,10 +1,10 @@
 +++
-title = "Module 3: Automate Deployments with Codebuild and Codepipeline"
+title = "Module 3"
 chapter = true
 weight = 23
 +++
 
-# Automate Deployments with Codebuild and Codepipeline
+# CI/CD with Codebuild , Codepipeline and Docker Compose
 
 **Estimated Completion Time: 1 Hour**
 

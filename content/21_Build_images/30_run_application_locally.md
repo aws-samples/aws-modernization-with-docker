@@ -63,6 +63,10 @@ http://localhost/
 
 Great, now that the application is up and running locally, lets now see how to seamlessly and without much changes migrate the same application on to AWS.
 
+* Inspect the resources
+
+List volumes created using `docker volume ls` and inspect them using `docker volume inspect docker-compose-ecs-sample_db-data`
+List networks created using `docker network ls`
 
 * Stop the application
 

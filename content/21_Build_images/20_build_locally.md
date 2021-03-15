@@ -110,22 +110,32 @@ docker-compose-ecs-sample_frontend   latest    974b4e988825   4 weeks ago     18
 
 ## Push images  to DockerHub
 
+* Set your docker hub id as environment variable
+
+```
+DOCKER_HUB_ID=FILL_ME_WITH_YOUR_DOCKER_HUB_ID
+```
+
 * Login to Docker Hub (if not done already), using your docker hub id and password that you created during the pre-requisites.
 
+
 ```
-docker login
+$ docker login -u ${DOCKER_HUB_ID}
+Password: 
+Login Succeeded
+
 ```
 
-* Push to docker hub after replacing `YOUR_DOCKER_HUB_ID` with your dockerhub id
+* Push to docker hub
 
 (TODO : anshrma to find out a better way to do that using docker compose push)
 
 ```
 
-docker tag docker-compose-ecs-sample_backend:latest YOUR_DOCKER_HUB_ID/docker-compose-ecs-sample_backend:latest
-docker tag docker-compose-ecs-sample_frontend:latest YOUR_DOCKER_HUB_ID/docker-compose-ecs-sample_frontend:latest
+docker tag docker-compose-ecs-sample_backend:latest ${DOCKER_HUB_ID}/docker-compose-ecs-sample_backend:latest
+docker tag docker-compose-ecs-sample_frontend:latest ${DOCKER_HUB_ID}/docker-compose-ecs-sample_frontend:latest
 
-docker push YOUR_DOCKER_HUB_ID/docker-compose-ecs-sample_backend:latest
-docker push YOUR_DOCKER_HUB_ID/docker-compose-ecs-sample_frontend:latest
+docker push ${DOCKER_HUB_ID}/docker-compose-ecs-sample_backend:latest
+docker push ${DOCKER_HUB_ID}/docker-compose-ecs-sample_frontend:latest
 
 ```

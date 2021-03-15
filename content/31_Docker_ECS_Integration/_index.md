@@ -1,26 +1,26 @@
 +++
-title = "Module 2: Deploy an Application Using the Docker Amazon ECS Plugin"
+title = "Module 2"
 chapter = true
 weight = 22
 +++
 
-# Deploy an Application Using the Docker Amazon ECS Plugin
+# Deploy an Application to AWS Using the Docker Amazon ECS Plugin
 
-**Estimated Completion Time: 1 Hour**
+## Learning Objectives
+Now that the application is up and running locally, lets now see how to seamlessly and without much changes migrate the same application on to AWS without modifying the developer experience and using the same `docker compose` commands. 
+Before we move further, let us do some preparation
 
-### **Introduction**
-In this section, we will learn about the Docker Amazon ECS plugin that allows the ability for users to deploy their Docker applications directly to Amazon ECS using the Docker Compose CLI. We will also learn about Docker Contexts and how we can use contexts to manage our applications. You will also notice that the ```docker-compose.yml``` files have additional components that we will be using to deploy our application for this module. We will also dive into what these additional components are and how they can help us build our application using AWS and Docker best practices. 
+## Preparation
 
-## Docker Amazon ECS Plugin
-The integration between Docker Compose and Amazon ECS allows users to deploy Compose applications to ECS simply using the Docker command line. The Docker Compose ECS integration relies on CloudFormation to manage AWS resources as an atomic operation. What this means is that when you deploy a Compose application to ECS, it will generate a CloudFormation template under the hood. 
+#### Create and Docker Context for Amazon ECS
 
+A context is a combination of several properties. These include:
 
-This provides an additional benefit for users deploying their application to ECS as you have the ability to take the CloudFormation and modify or add addtional components as needed. 
+* Name
+* Endpoint configuration
+* TLS info
+* Orchestrator
 
-## Docker Context
-Ability to point to container runtime and deploy your apps using the docker commands you already know docker compose up, down, ps
-
-## Create and Manage Contexts
 Let's first take a look at what contexts we have on our local machine. Run the follow command to view a list of contexts.
 
 ```
@@ -31,21 +31,7 @@ default *           moby                Current DOCKER_HOST based configuration 
 
 The `docker context ls` command prints out a list of contexts currently configured on your local machine. You'll notice the `default` context has a `*` beside it. This denotes that it is the current context that all Docker commands will use.
   
-Now lets create a context that we can use to target ECS. To do this, we'll use the `docker context create` command. Let's take a look at the help for this command.
-```
-$ docker context create --help
-Create a new context
-
-Create docker engine context:
-$ docker context create CONTEXT [flags]
-
-Create Amazon ECS context:
-$ docker context create ecs CONTEXT [flags]
-(see docker context create ecs --help)
-...
-```
-
-I've truncated the output to the most relevant point. That is creating an Amazon ECS context. Let's take a look at the help for the `docker context create ecs` command.
+Now lets create a context that we can use to target ECS. To do this, we'll use the `docker context create` command. 
 
 ```
 $ docker context create ecs --help
@@ -55,76 +41,95 @@ Usage:
   docker context create ecs CONTEXT [flags]
 
 Flags:
+      --access-keys string   Use AWS access keys from file
       --description string   Description of the context
+      --from-env             Use AWS environment variables for profile, or credentials and region
   -h, --help                 Help for ecs
       --local-simulation     Create context for ECS local simulation endpoints
-      --profile string       Profile
-      --region string        Region
+      --profile string       Use an existing AWS profile
 
 Global Flags:
-      --config DIRECTORY   Location of the client config files DIRECTORY (default "/Users/peter/.docker")
+      --config DIRECTORY   Location of the client config files DIRECTORY (default "/Users/anshrma/.docker")
   -c, --context string     context
   -D, --debug              Enable debug output in the logs
   -H, --host string        Daemon socket(s) to connect to
+
 ```
 
 As you can see, the `docker context create ecs` command takes a `CONTEXT` as parameter. The `CONTEXT` parameter will be used to name the context. Let's run the basic command without passing any flags.
 
 ```
-$ docker context create ecs ecs
-? Select AWS Profile  [Use arrows to move, type to filter]
-> new profile
-  default
-  workshop
+$ docker context create ecs ecs-workshop
+? Create a Docker context using:  [Use arrows to move, type to filter]
+  An existing AWS profile
+> AWS secret and token credentials
+  AWS environment variables
+
 ```
 
-The command recognizes that we did not provide a profile and will ask us to select one to use or create a new one. Let's create a new one. Move the arrow (`>`) so that it is pointing to the `new profile` option and press enter.
+The command recognizes that we did not provide a profile and will ask us to select one to use or create a new one. Let's create a new one. Move the arrow (`>`) so that it is pointing to the `AWS secret and token credentials` option and press enter.
 
-We'll use the name "workshop". Enter that as your profile name.
-```
-$ docker context create ecs ecs
-? Select AWS Profile new profile
-? profile name workshop
-```
 
-Now we are asked if we want to provide AWS credentials. If you do not want to provide credentials now, you can add them to the `~/.aws/credentials` later. Let's enter them now.
-```
-$ docker context create ecs ecs
-? Select AWS Profile new profile
-? profile name workshop
-? Enter AWS credentials yes
-? AWS Access Key ID XXXXXXXXXXXXXXXXXXXX
-? Enter AWS Secret Access Key ****************************************
-```
+Now we are asked if we want to provide AWS credentials. Enter `us-east-1` for the region. 
 
-Enter `us-east-1` for the region. 
 ```
-$ docker context create ecs ecs
-? Select AWS Profile new profile
-? profile name workshop
-? Enter AWS credentials yes
-? AWS Access Key ID XXXXXXXXXXXXXXXXXXXX
+$ docker context create ecs ecs-workshop
+? Create a Docker context using: AWS secret and token credentials
+Retrieve or create AWS Access Key and Secret on https://console.aws.amazon.com/iam/home?#security_credential
+? AWS Access Key ID YOUR_ACCESS_KEY
 ? Enter AWS Secret Access Key ****************************************
 ? Region us-east-1
-Successfully created ecs context "ecs"
+Successfully created ecs context "ecs-workshop"
+
 ```
+
+Lets change the context to use AWS ECS by using `docker context use ecs-workshop`.
+
 
 Let's print out the list of contexts.
 ```
 $ docker context ls
 NAME                TYPE                DESCRIPTION                               DOCKER ENDPOINT               KUBERNETES ENDPOINT                                 ORCHESTRATOR
-default *           moby                Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   https://kubernetes.docker.internal:6443 (default)   swarm
-ecs                 ecs                 (us-east-1)
+default             moby                Current DOCKER_HOST based configuration   unix:///var/run/docker.sock   https://kubernetes.docker.internal:6443 (default)   swarm
+                                                                                         
+ecs-workshop *      ecs                 (us-east-1)            
 ```
 
-BOOOM! There we go. We now have a docker context pointing to the AWS ECS service in us-east-1.
+We now have a docker context pointing to the AWS ECS service in us-east-1. So far, we did not deploy anything yet to the ECS.
+
+
+#### Create Secrets in AWS Secrets Manager using docker command
+
+Create a file named `docker-pull-creds.json` and add the following to it. Amazon ECS will use this token to retrieve the images from docker hub.
+
+`touch docker-pull-creds.json`
+
+```
+{
+   "username":"YOUR DOCKERHUB USERID",
+   "token":"YOUR DOCKERHUB TOKEN"
+}
+
+```
+
+Run following to create a secret in AWS Secrets Manager and save the ARN (Amazon Resource Number) to an environment variable
+
+```
+DOCKER_PULL_SECRETS_MANAGER=$(docker secret create pullcredentials /docker-compose-ecs-sample/docker-pull-creds.json)
+echo $DOCKER_PULL_SECRETS_MANAGER
+```
+
+Now that we are done with preparation steps, lets now deploy the application to AWS ECS.
+
+
+==========================Delete this
 
 ## Deploy single application using ECS context
 Now that we have a context pointing to ECS, we'll use it to deploy a simple NGINX webserver. To do that, we'll create a compose file to describe our service. 
 
 Create a text file named `docker-compose-nginx.yml` and add the follow yaml to it.
 
-`$ touch docker-compose.yml`
+`touch docker-compose.yml`
 
   ```		
   version: "3.8"
