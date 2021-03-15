@@ -1,37 +1,27 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: This template will launch the Modernization Workshop CI/CD Pipeline.
+Description: This template will launch the CI/CD Pipeline for our Docker Compose application. 
 
 # It should only be necessary to update the parameters
-# run this stack as below but sub for {WORKSHOP NAME} with the workshop/company name and set the value
-# of CloudFrontDistroId resulting from the S3 + CloudFront CloudFormation template.
 
-# aws cloudformation create-stack --stack-name {WORKSHOP NAME}-Website-Pipeline --template-body file://pipeline.yaml --capabilities CAPABILITY_NAMED_IAM
+# aws cloudformation create-stack --stack-name {WORKSHOP NAME}-Website-Pipeline --template-body file://docker-pipeline.yaml --capabilities CAPABILITY_NAMED_IAM
 
 Parameters:
   ProjectName:
     Type: String
     Description: Project Name
-    Default: docker
-  WebsiteBucket:
-    Type: String
-    Description: Website S3 bucket name
-    Default: docker.awsworkshop.io 
-  CloudFrontDistroId:
-    Type: String
-    Description: CloudFront distribution ID 
-    Default: E2HKW99840ZX84
+    Default: xxxxxxx
   GitHubRepo:
     Type: String
     Description: repo name
-    Default: aws-modernization-with-docker
+    Default: name of your repo for this workshop
   FullRepoURL:
     Type: String
     Description: The full url to the repo
-    Default: https://github.com/aws-samples/aws-modernization-with-docker.git  
+    Default: Link to your GitHub repo
   GitHubOwner:
     Type: String
     Description: GitHub owner name
-    Default: aws-samples  
+    Default: "your GitHub username" 
   
 Resources:
   CodeBuildServiceRole:
@@ -62,17 +52,6 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:GetObjectVersion
-              - Resource: !Sub arn:aws:s3:::${WebsiteBucket}/*
-                Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:GetObjectVersion
-                  - s3:ListBucket
-              - Effect: Allow
-                Action:
-                  - cloudfront:CreateInvalidation
-                Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistroId}
 
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -126,10 +105,6 @@ Resources:
             Value: !Ref AWS::Region
           - Name: FULL_REPO_URL
             Value: !Ref FullRepoURL
-          - Name: WEB_SITE_BUCKET
-            Value: !Ref WebsiteBucket
-          - Name: CLOUDFRONT_DISTRO_ID
-            Value: !Ref CloudFrontDistroId
         PrivilegedMode: true
       Name: !Join ['', [!Ref 'ProjectName', '-Workshop-website']]
       ServiceRole: !Ref CodeBuildServiceRole
@@ -153,7 +128,7 @@ Resources:
               Configuration:
                 Owner: !Ref GitHubOwner
                 Repo: !Ref GitHubRepo
-                Branch: master
+                Branch: main
                 PollForSourceChanges: false
                 OAuthToken: '{{resolve:secretsmanager:GitHub/WorkshopOwnerToken:SecretString:OwnerToken}}'
               OutputArtifacts:
@@ -191,4 +166,4 @@ Resources:
 
 Outputs:
   PipelineUrl:
-    Value: !Sub https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${Pipeline}      
+    Value: !Sub https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${Pipeline}
