@@ -1,8 +1,10 @@
 +++
-title = "Module 1: Build a Multi container image with Docker Compose - Introduction"
+title = "Module 1"
 chapter = true
 weight = 21
 +++
+
+
 
 # Building Container Images with Docker Buildkit and Compose
 
