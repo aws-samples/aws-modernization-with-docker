@@ -1,10 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: This template will launch the CI/CD Pipeline for our Docker Compose application. 
 
-# It should only be necessary to update the parameters
-
-# aws cloudformation create-stack --stack-name {WORKSHOP NAME}-Website-Pipeline --template-body file://docker-pipeline.yaml --capabilities CAPABILITY_NAMED_IAM
-
 Parameters:
   ProjectName:
     Type: String
