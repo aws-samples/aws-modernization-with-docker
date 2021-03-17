@@ -124,7 +124,7 @@ Local | Generated AWS resource | Purpose | More Information
 
 
 
-Run `docker compose ps` to view the list of relevant services that were created on AWS
+Run `docker compose ps` to view the list of relevant services that were created on AWS . Note the load balancer URL for your frontend
 
 ```
 $ docker compose ps
@@ -134,9 +134,9 @@ task/docker-compose-ecs-sample/a44a69616e4441d09f2a07b0b2d5db8e   db            
 task/docker-compose-ecs-sample/ed6893cac6d54d32a047f68dd0796365   frontend            Running             docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com:80->80/http
 ```
 
-Access the URL mentioned above to access the application. Access the application , simimarly how you accessed it locally in Module-1.
+Access the URL mentioned above to access the application. Access the application , similarly how you accessed it locally in Module-1.
 
-* Insert records in database
+* Insert records in database (replace it from the frontend endpoint url from above step)
 
 ```
 http://docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com/add/2/name2
