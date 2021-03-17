@@ -1,129 +1,170 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: This template will launch the CI/CD Pipeline for our Docker Compose application. 
+Description: This template will launch the CI/CD Pipeline for the Docker-AWS Workshop.
 
 Parameters:
   ProjectName:
     Type: String
-    Description: Project Name
-    Default: xxxxxxx
+    Description: CI/CD for Docker-ECS Workshop
+    Default: xxxxxxxx
   GitHubRepo:
     Type: String
-    Description: repo name
-    Default: name of your repo for this workshop
+    Description: The name of your GitHub repo that you are using for this workshop 
+    Default: xxxxxxxx
   FullRepoURL:
     Type: String
-    Description: The full url to the repo
-    Default: Link to your GitHub repo
+    Description: URL to your GitHub repo that you forked for this workshop 
+    Default: https://github.com/insert-your-github-username/docker-compose-ecs-sample
   GitHubOwner:
     Type: String
     Description: GitHub owner name
     Default: "your GitHub username" 
   
+
 Resources:
+  # # source code and buildspec.yaml goes to this bucket 
+  # InputBucket:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     # codebuild-region-ID-account-ID-input-bucket, where region-ID
+  #     BucketName: !Join ['codebuild', '-', 'AWS::Region', '-', 'AWS::AccountID', '-', 'input-bucket']
+  #     AccessControl: "BucketOwnerFullControl"
+  
+  # InputBucketPolicy:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     Bucket: !Ref InputBucket
+  #     PolicyDocument: 
+  #       Statement:
+  #       - Action: 's3:Get*'
+  #         Effect: Allow
+  #         Resource: !Join ['', ['arn:aws:s3:::', !Ref 'InputBucket', /*]]
+  #         Principal: '*' 
+  
+  # # build output will go into this bucket 
+  # OutputBucket:
+  #   Type: AWS::S3::Bucket
+  #   Properties: 
+  #     # codebuild-region-ID-account-ID-output-bucket
+  #     BucketName: !Join ['codebuild', '-', 'AWS::Region', '-', 'AWS::AccountID', '-', 'output-bucket']
+  #     AccessControl: "BucketOwnerFullControl"
+  
+  # OutputBucketPolicy:
+  #  Type: AWS::S3::Bucket
+  #  Properties:
+  #   Bucket: !Ref OutputBucket
+  #   PolicyDocument: 
+  #     Statement:
+  #     - Action: 's3:Get*'
+  #       Effect: Allow
+  #       Resource: !Join ['', ['arn:aws:s3:::', !Ref 'OutputBucket', /*]]
+  #       Principal: '*'  
+
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      Path: /
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
         Statement:
-          - Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: root
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [codebuild.amazonaws.com]
+        Version: '2012-10-17'
+        Path: /
+        Policies:
+        - PolicyName: CodeBuildAccess
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
-              - Resource: "*"
-                Effect: Allow
-                Action:
+              - Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
-                  - logs:PutLogEvents
-              - Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+                  - logs:PutLogEvent
                 Effect: Allow
-                Action:
+                Resource: '*'
+              - Action:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:GetObjectVersion
-
+                Effect: Allow
+                Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+  
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      Path: /
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
         Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: root
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Resource:
-                  - !Sub arn:aws:s3:::${ArtifactBucket}/*
-                Effect: Allow
-                Action:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal: 
+            Service: [codepipeline.amazonaws.com]
+          Version: '2012-10-17'
+          Path: /
+          Policies:
+          - PolicyName: CodePipelineAccess
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                  - iam:PassRole
+                  Effect: Allow
+                  Resource: '*'
+                - Action: 
                   - s3:PutObject
                   - s3:GetObject
                   - s3:GetObjectVersion
                   - s3:GetBucketVersioning
-              - Resource: "*"
-                Effect: Allow
-                Action:
-                  - codebuild:StartBuild
-                  - codebuild:BatchGetBuilds
-                  - iam:PassRole
-
+                  Effect: Allow
+                  Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+   
   ArtifactBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
+    DeletionPolicy: Delete 
 
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Artifacts:
-        Type: CODEPIPELINE
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: webspec.yml
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:2.0
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: AWS_DEFAULT_REGION
-            Value: !Ref AWS::Region
-          - Name: FULL_REPO_URL
-            Value: !Ref FullRepoURL
-        PrivilegedMode: true
-      Name: !Join ['', [!Ref 'ProjectName', '-Workshop-website']]
+      Name: docker-ecs-workshop
+      Description: A description about my project
       ServiceRole: !Ref CodeBuildServiceRole
-                     
+      Artifacts:
+        Type: CODEPIPELINE 
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        EnvironmentVariables:
+        - Name: AWS_DEFAULT_REGION
+          Value: !Ref AWS::Region 
+        - Name: FULL_REPO_URL
+          Value: !Ref FullRepoURL
+        PrivilegedMode: true
+      Source:
+        Location: webspec.yml
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 10
+
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      Name: name
+      RoleArn: !Ref CodePipelineServiceRole
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: Source
+      Stages: 
+        - Name: Source 
+          Actions: 
+            - Name: Source 
               ActionTypeId:
-                Category: Source
+                Category: Source 
                 Owner: ThirdParty
                 Version: '1'
-                Provider: GitHub
+                Provider: GitHub 
               Configuration:
                 Owner: !Ref GitHubOwner
-                Repo: !Ref GitHubRepo
+                Repo: !Ref GitHubRepo 
                 Branch: main
                 PollForSourceChanges: false
                 OAuthToken: '{{resolve:secretsmanager:GitHub/WorkshopOwnerToken:SecretString:OwnerToken}}'
@@ -145,9 +186,9 @@ Resources:
               OutputArtifacts:
                 - Name: BuildOutput
               RunOrder: 1
-    
-  GithubWebhook:
-    Type: 'AWS::CodePipeline::Webhook'
+  
+  GitHubWebHook:
+    Type: AWS::CodePipeline::Webhook
     Properties:
       Authentication: GITHUB_HMAC
       AuthenticationConfiguration:
@@ -155,9 +196,10 @@ Resources:
       RegisterWithThirdParty: true
       Filters:
       - JsonPath: "$.ref"
-        MatchEquals: refs/heads/{Branch}
+        MatchEquals: refs/heads/{Branch} 
       TargetPipeline: !Ref Pipeline
-      TargetAction: Source
+      TargetAction: Source 
+      Name: MyWebhook 
       TargetPipelineVersion: !GetAtt Pipeline.Version
 
 Outputs:
