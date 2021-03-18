@@ -2,148 +2,164 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: This template will launch the CI/CD Pipeline for the Docker-AWS Workshop.
 
 Parameters:
-  ProjectName:
-    Type: String
-    Description: CI/CD for Docker-ECS Workshop
-    Default: xxxxxxxx
-  GitHubRepo:
-    Type: String
-    Description: The name of your GitHub repo that you are using for this workshop 
-    Default: xxxxxxxx
-  FullRepoURL:
-    Type: String
-    Description: URL to your GitHub repo that you forked for this workshop 
-    Default: https://github.com/insert-your-github-username/docker-compose-ecs-sample
   GitHubOwner:
     Type: String
-    Description: GitHub owner name
-    Default: "your GitHub username" 
+    AllowedPattern: '[A-Za-z0-9-]+'
+    Default: parkand1
+  GitHubRepository:
+    Type: String
+    AllowedPattern: '[A-Za-z0-9-]+'
+  GitHubBranch:
+    Type: String
+    AllowedPattern: '[A-Za-z0-9-]+'
+    Default: main
+  CodeBuildEnvironmentImage:
+    Type: String
+    Default: 'aws/codebuild/standard:5.0'
   
 
 Resources:
-  # # source code and buildspec.yaml goes to this bucket 
-  # InputBucket:
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     # codebuild-region-ID-account-ID-input-bucket, where region-ID
-  #     BucketName: !Join ['codebuild', '-', 'AWS::Region', '-', 'AWS::AccountID', '-', 'input-bucket']
-  #     AccessControl: "BucketOwnerFullControl"
-  
-  # InputBucketPolicy:
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     Bucket: !Ref InputBucket
-  #     PolicyDocument: 
-  #       Statement:
-  #       - Action: 's3:Get*'
-  #         Effect: Allow
-  #         Resource: !Join ['', ['arn:aws:s3:::', !Ref 'InputBucket', /*]]
-  #         Principal: '*' 
-  
-  # # build output will go into this bucket 
-  # OutputBucket:
-  #   Type: AWS::S3::Bucket
-  #   Properties: 
-  #     # codebuild-region-ID-account-ID-output-bucket
-  #     BucketName: !Join ['codebuild', '-', 'AWS::Region', '-', 'AWS::AccountID', '-', 'output-bucket']
-  #     AccessControl: "BucketOwnerFullControl"
-  
-  # OutputBucketPolicy:
-  #  Type: AWS::S3::Bucket
-  #  Properties:
-  #   Bucket: !Ref OutputBucket
-  #   PolicyDocument: 
-  #     Statement:
-  #     - Action: 's3:Get*'
-  #       Effect: Allow
-  #       Resource: !Join ['', ['arn:aws:s3:::', !Ref 'OutputBucket', /*]]
-  #       Principal: '*'  
-
   CodeBuildServiceRole:
-    Type: AWS::IAM::Role
+    Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [codebuild.amazonaws.com]
-        Version: '2012-10-17'
-        Path: /
-        Policies:
-        - PolicyName: CodeBuildAccess
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: root
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: 2012-10-17
             Statement:
-              - Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvent
+              - Sid: CloudWatchLogsPolicy
                 Effect: Allow
-                Resource: '*'
-              - Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:GetObjectVersion
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - '*'
+              - Sid: S3GetObjectPolicy
                 Effect: Allow
-                Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+                Action:
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                Resource:
+                  - '*'
+              - Sid: S3PutObjectPolicy
+                Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  - '*'
+              - Sid: S3BucketIdentity
+                Effect: Allow
+                Action:
+                  - 's3:GetBucketAcl'
+                  - 's3:GetBucketLocation'
+                Resource:
+                  - '*'
   
   CodePipelineServiceRole:
-    Type: AWS::IAM::Role
+    Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal: 
-            Service: [codepipeline.amazonaws.com]
-          Version: '2012-10-17'
-          Path: /
-          Policies:
-          - PolicyName: CodePipelineAccess
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Action:
-                  - codebuild:StartBuild
-                  - codebuild:BatchGetBuilds
-                  - iam:PassRole
-                  Effect: Allow
-                  Resource: '*'
-                - Action: 
-                  - s3:PutObject
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:GetBucketVersioning
-                  Effect: Allow
-                  Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogsPolicy
+                Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - '*'
+              - Sid: S3GetObjectPolicy
+                Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                Resource:
+                  - '*'
+              - Sid: S3PutObjectPolicy
+                Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  - '*'
+              - Sid: S3BucketIdentity
+                Effect: Allow
+                Action:
+                  - 's3:GetBucketAcl'
+                  - 's3:GetBucketLocation'
+                Resource:
+                  - '*'
+              - Sid: CodeBuildPolicy
+                Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: '*'
+                Effect: Allow
    
   ArtifactBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete 
 
-  CodeBuildProject:
-    Type: AWS::CodeBuild::Project
+  CodeBuildSourceCredential:
+    Type: 'AWS::CodeBuild::SourceCredential'
     Properties:
-      Name: docker-ecs-workshop
-      Description: A description about my project
-      ServiceRole: !Ref CodeBuildServiceRole
+      AuthType: PERSONAL_ACCESS_TOKEN
+      ServerType: GITHUB
+      Token: >-
+        {{resolve:secretsmanager:github-oauth-token:SecretString:GITHUB_ACCESS_TOKEN}}
+
+  CodeBuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Ref 'AWS::StackName'
+      ServiceRole: !GetAtt 
+        - CodeBuildServiceRole
+        - Arn
+      Source:
+        Type: GITHUB
+        Location: !Sub 'https://github.com/${GitHubOwner}/${GitHubRepository}.git'
+        BuildSpec: buildspec.yaml
+        Auth:
+          Type: OAUTH
+          Resource: !Ref CodeBuildSourceCredential
       Artifacts:
-        Type: CODEPIPELINE 
+        Type: NO_ARTIFACTS
+      Triggers:
+        Webhook: true
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: >-
+                PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED,
+                PULL_REQUEST_REOPENED, PULL_REQUEST_MERGED,
+            - Type: BASE_REF
+              Pattern: !Sub '^refs/heads/${GitHubBranch}$'
+          # - - Type: EVENT
+          #     Pattern: >-
+          #       PUSH
+          #   - Type: HEAD_REF
+          #     Pattern: !Sub '^refs/heads/${GitHubBranch}$'
+
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:5.0
-        EnvironmentVariables:
-        - Name: AWS_DEFAULT_REGION
-          Value: !Ref AWS::Region 
-        - Name: FULL_REPO_URL
-          Value: !Ref FullRepoURL
-        PrivilegedMode: true
-      Source:
-        Location: webspec.yml
-        Type: CODEPIPELINE
-      TimeoutInMinutes: 10
+        Image: !Ref CodeBuildEnvironmentImage 
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -164,10 +180,10 @@ Resources:
                 Provider: GitHub 
               Configuration:
                 Owner: !Ref GitHubOwner
-                Repo: !Ref GitHubRepo 
+                Repo: !Ref GitHubRepository
                 Branch: main
                 PollForSourceChanges: false
-                OAuthToken: '{{resolve:secretsmanager:GitHub/WorkshopOwnerToken:SecretString:OwnerToken}}'
+                OAuthToken: '{{resolve:secretsmanager:github-oauth-token:SecretString:GITHUB_ACCESS_TOKEN}}'
               OutputArtifacts:
                 - Name: SourceCode
               RunOrder: 1
@@ -187,20 +203,23 @@ Resources:
                 - Name: BuildOutput
               RunOrder: 1
   
-  GitHubWebHook:
-    Type: AWS::CodePipeline::Webhook
+  CodePipelineWebhook:
+    Type: 'AWS::CodePipeline::Webhook'
     Properties:
       Authentication: GITHUB_HMAC
       AuthenticationConfiguration:
-        SecretToken: '{{resolve:secretsmanager:GitHub/WorkshopOwnerToken:SecretString:OwnerToken}}'
+        SecretToken: >-
+          {{resolve:secretsmanager:github-oauth-token:SecretString:GITHUB_ACCESS_TOKEN}}
       RegisterWithThirdParty: true
       Filters:
-      - JsonPath: "$.ref"
-        MatchEquals: refs/heads/{Branch} 
-      TargetPipeline: !Ref Pipeline
-      TargetAction: Source 
-      Name: MyWebhook 
+        - JsonPath: $.ref
+          MatchEquals: 'refs/heads/{Branch}'
+        - JsonPath: $.repository.name
+          MatchEquals: '{Repo}'
+      TargetPipeline: !Ref Pipeline 
+      TargetAction: Source
       TargetPipelineVersion: !GetAtt Pipeline.Version
+
 
 Outputs:
   PipelineUrl:
