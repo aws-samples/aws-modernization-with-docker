@@ -15,7 +15,7 @@ AWS CodePipeline is a fully managed **continuous delivery** service that helps y
 ### Deploy AWS CodeBuild and AWS CodePipeline with CloudFormation
 We will be using CloudFormation in order to set up our CI/CD pipeline so copy and paste the following command in your terminal. We have included the configuration file for the CloudFormation API's to reference. This will take 1-2 minutes to deploy. 
 ```
-aws cloudformation create-stack --stack-name MY-Website-Pipeline --template-body file://docker-pipeline.yaml --capabilities CAPABILITY_NAMED_IAM --enable-termination-protection
+aws cloudformation create-stack --stack-name docker-compose-code-pipeline --template-body file://operations/code-pipeline-cloudformation.yaml --capabilities CAPABILITY_NAMED_IAM --enable-termination-protection --parameters DockerPullSecretsManagerArn=${DOCKER_PULL_SECRETS_MANAGER}
 ```
 
 Once our CloudFormation is done deploying, we should see the following in the AWS console
