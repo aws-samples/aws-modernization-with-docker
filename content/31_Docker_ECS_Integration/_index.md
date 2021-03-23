@@ -8,11 +8,14 @@ weight = 22
 
 ## Learning Objectives
 Now that the application is up and running locally, lets now see how to seamlessly and without much changes migrate the same application on to AWS without modifying the developer experience and using the same `docker compose` commands. 
-Before we move further, let us do some preparation
+Before we move further, let's talk about some of the steps needed in order to utilize the ECS plugin for Docker Compose. 
 
-## Preparation
+## What is a Docker Context?
+A single Docker CLI can have multiple **contexts**. Each context contains all of the endpoint and security information required to manage a different cluster or node. The docker context command makes it easy to configure these contexts and switch between them. As an example, a single Docker client on your company laptop might be configured with two contexts; dev-k8s and prod-swarm. dev-k8s contains the endpoint data and security credentials to configure and manage a Kubernetes cluster in a development environment. prod-swarm contains everything required to manage a Swarm cluster in a production environment. Once these contexts are configured, you can use the top-level docker context use <context-name> to easily switch between them.
 
-#### Create and Docker Context for Amazon ECS
+The other reason why contexts are important to understand is that you need to create a context for Amazon ECS specifically in order to be able to deploy your application to ECS as it includes the specific configurations and endpoints to do so. 
+
+#### Create a Docker Context for Amazon ECS
 
 A context is a combination of several properties. These include:
 
@@ -98,7 +101,13 @@ ecs-workshop *      ecs                 (us-east-1)
 We now have a docker context pointing to the AWS ECS service in us-east-1. So far, we did not deploy anything yet to the ECS.
 
 
-#### Create Secrets in AWS Secrets Manager using docker command
+## Create Secrets in AWS Secrets Manager using docker command
+
+### What is AWS Secrets Manager?
+
+AWS Secrets Manager Secrets Manager enables you to replace hardcoded credentials in your code, including passwords, with an API call to Secrets Manager to retrieve the secret programmatically. This helps ensure the secret can't be compromised by someone examining your code, because the secret no longer exists in the code. Also, you can configure Secrets Manager to automatically rotate the secret for you according to a specified schedule. This enables you to replace long-term secrets with short-term ones, significantly reducing the risk of compromise. This includes API keys and OAuth tokens which we will be using later in this workshop. 
+
+### Create a secret in AWS Secrets Manager using your Docker Hub credentials
 
 Create a file named `docker-pull-creds.json` and add the following to it. Amazon ECS will use this token to retrieve the images from docker hub.
 
@@ -119,6 +128,6 @@ DOCKER_PULL_SECRETS_MANAGER=$(docker secret create pullcredentials /docker-compo
 echo $DOCKER_PULL_SECRETS_MANAGER
 ```
 
-Now that we are done with preparation steps, lets now deploy the application to AWS ECS.
+In the next section, we will deploy our application to Amazon ECS. 
 
 

@@ -8,7 +8,7 @@ weight = 21
 
 ## Learning Objectives
 
-In this module, we will take the application that we ran locally and deploy to Amazon ECS , using the same `docker compose` commands (without modifying the developer experience). We will overlay the default `docker-compose.yaml` with ` docker-compose.prod.migrate.yaml`. With compose file overlays, we modify only what is required to be modified for a specific environment deployment.
+In this module, we will take the application that we built in Module 1 and deploy to Amazon ECS. We will use the same `docker compose` commands (without modifying the developer experience). We will overlay the default `docker-compose.yaml` with ` docker-compose.prod.migrate.yaml`. With compose file overlays, we modify only what is required to be modified for a specific environment deployment.
 
 As example, in Module-2, we built images locally using `docker compose build` commands, however, when we want to deploy in to AWS, we want to use the images published to a container repository and pull images to ECS. 
 
@@ -88,10 +88,10 @@ WARNING services.restart: unsupported attribute
 ```
 
 
-You will notice that docker compose had an opinion about AWS resource creation, which conforms to AWS Well Architected Principles.
+You will notice that Docker Compose had an opinion about creating AWS resources, which all conforms to the AWS Well Architected Principles.
 All the resources were deployed to the Default VPC for this lab. In real life scenario, you can deploy to your own VPC and subnets using `x-aws-vpc` extension (commented in  docker-compose.prod.migrate.yaml).
 
-Docker compose CLI first concatenates the compose files passed , generates an opinionated [AWS CloudFormation](https://aws.amazon.com/cloudformation/) template and deploys it to create the AWS resources. You can run `docker compose convert` command to view the AWS Cloudformation template that is generated.
+The Docker Compose CLI first concatenates the compose files passed through and generates an opinionated [AWS CloudFormation](https://aws.amazon.com/cloudformation/) template and deploys it to create the AWS resources defined in our compose file. You can run `docker compose convert` command to view the AWS Cloudformation template that is generated.
 
 ```
 
@@ -108,7 +108,7 @@ WARNING services.restart: unsupported attribute
 cat aws-cloudformation.yaml
 ```
 
-Note that, the generated AWS Cloudformation template `aws-cloudformation.yaml` has around 650+ lines of code that we never coded, but the same compose files that we used for local development generated it for us in ECS context, thereby keeping a consistant developer experience.
+Note that the generated AWS Cloudformation template `aws-cloudformation.yaml` has around 650+ lines of code that we never coded, but the same compose files that we used for local development generated it for us in ECS context, thereby keeping a consistant developer experience.
 
 You can view the entire CloudFormation stack at https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringStatus=active&filteringText=&viewNested=true&hideStacks=false
 

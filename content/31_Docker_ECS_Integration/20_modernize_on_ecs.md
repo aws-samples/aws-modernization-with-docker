@@ -4,16 +4,19 @@ chapter = false
 weight = 21
 +++
 
-# Modernize the sample application to AWS ECS using docker compose
+# Modernize the sample application to AWS ECS using Docker Compose
 
 ## Learning Objectives
 
-Now that we have migrated the application to AWS and succesfully running it on AWS, lets take a step forward and start modernizing it, again without modifying the developer experience , using the same docker compose command line interface. For a complete list and docker compose to ecs mapping, refer [here](https://docs.docker.com/cloud/ecs-compose-features/) and [examples](https://docs.docker.com/cloud/ecs-compose-examples/)
+Now that we have migrated the application to AWS and succesfully running it on AWS, lets take a step forward and start modernizing it, again without modifying the developer experience , using the same docker compose command line interface. For a complete list and Docker Compose to ECS mapping, refer [here](https://docs.docker.com/cloud/ecs-compose-features/) and [examples](https://docs.docker.com/cloud/ecs-compose-examples/)
 
 In this step, we will do following
 
 * Enable AutoScaling for the AWS Fargate tasks
 * Use MQSQL database hosted on AWS Relational Database System (RDS), instead of the container.
+
+## What is AWS Fargate?
+AWS Fargate is a serverless compute engine for containers that works with both Amazon Elastic Container Service (ECS) and Amazon Elastic Kubernetes Service (EKS). Fargate makes it easy for you to focus on building your applications. Fargate removes the need to provision and manage servers, lets you specify and pay for resources per application, and improves security through application isolation by design.
 
 
 ## Enable Autoscaling for AWS Fargate tasks
