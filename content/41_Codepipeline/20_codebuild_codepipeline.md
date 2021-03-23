@@ -1,5 +1,5 @@
 +++
-title = "Step 1: Introducion to AWS CodeBuild and AWS CodePipeline"
+title = "Step 2: Introducion to AWS CodeBuild and AWS CodePipeline"
 chapter = false
 weight = 21
 +++
