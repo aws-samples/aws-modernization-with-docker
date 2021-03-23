@@ -4,8 +4,6 @@ chapter = true
 weight = 21
 +++
 
-
-
 # Building Container Images with Docker Buildkit and Compose
 
 **Estimated Completion Time: 30 minutes - 1 hour**

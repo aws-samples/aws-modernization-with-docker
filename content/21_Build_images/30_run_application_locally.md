@@ -6,11 +6,11 @@ weight = 21
 
 ## Run the application locally
 
-Now that we have built the application locally, lets run it. We will use `docker compose up` to start all the three services that we defined in `docker-compose.yaml` file. We will use the [default context](https://docs.docker.com/engine/context/working-with-contexts/) to run the application locally. 
+Now that we have built the application locally, lets use Docker Compose to run our application locally. We will use `docker compose up` to start all the three services that we defined in our `docker-compose.yaml` file. We will use the [default context](https://docs.docker.com/engine/context/working-with-contexts/) to run the application locally. 
 
 ```
 
-docker compose up
+$ docker compose up
 
 [+] Building 32.3s (5/5) FINISHED                                                                                                                                                  
 [+] Running 6/5
@@ -24,7 +24,7 @@ Attaching to docker-compose-ecs-sample_frontend_1, docker-compose-ecs-sample_bac
 
 ```
 
-This step can take few minutes, but when you see message similar to following, it means the application is up and running locally.
+This step can take few minutes, but when you see a message similar to following, it means the application is up and running locally.
 
 ```
 Attaching to docker-compose-ecs-sample_frontend_1, docker-compose-ecs-sample_backend_1, docker-compose-ecs-sample_db_1
@@ -42,9 +42,8 @@ docker-compose-ecs-sample_db_1 | 2021-03-08T21:51:22.245078Z 0 [System] [MY-0113
 You can optionally run `docker compose up -d` to run the same command in background. When you do that you can open Docker Desktop to visualize the logs.
 {{% /notice %}}
 
-## Run the application locally
 
-Run the following on any browser
+Run the following on any browser to test that our application works.
 
 * Insert records in database
 
@@ -58,16 +57,20 @@ http://localhost/add/4/name4
 * Retrieve records from database
 
 ```
-http://localhost/
+http://localhost/80
 ```
 
 Great, now that the application is up and running locally, lets now see how to seamlessly and without much changes migrate the same application on to AWS.
 
 * Inspect the resources
 
-List volumes created using `docker volume ls` and inspect them using `docker volume inspect docker-compose-ecs-sample_db-data`
-List networks created using `docker network ls`
+List the volumes created using `docker volume ls` and inspect them using `docker volume inspect docker-compose-ecs-sample_db-data`
+List the networks created using `docker network ls`
 
 * Stop the application
 
 Hit `Cntrl + C` to stop the application. 
+
+## Summary 
+
+In this module, we learned how to use Docker Compose to build our appliction locally and how we can add networking and storage components to our application by defining those resources in our docker-compose files. In the next module, we will be taking our application that we built and modernization it by deploying it to Amazon ECS and adding AWS specific resources through the same methodology used in this module. 
