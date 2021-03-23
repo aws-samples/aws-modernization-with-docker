@@ -26,8 +26,11 @@ the EKS IAM authentication, so we will disable it and rely on the IAM role inste
       # Update awscli
       sudo pip install --upgrade awscli && hash -r
 
+      # Update Ubuntu packages/binaries
+      sudo apt update
+
       # Install jq command-line tool for parsing JSON, and bash-completion
-      sudo yum -y install jq gettext bash-completion moreutils
+      sudo apt install jq gettext bash-completion moreutils
 
       # Install yq for yaml processing
       echo 'yq() {
@@ -56,7 +59,7 @@ the EKS IAM authentication, so we will disable it and rely on the IAM role inste
       aws configure get default.region
 
       # Validate that our IAM role is valid.
-      aws sts get-caller-identity --query Arn | grep docker-workshop -q && echo "IAM role valid" || echo "IAM role NOT valid"
+      aws sts get-caller-identity --query Arn | grep Docker-Workshop-Admin -q && echo "IAM role valid" || echo "IAM role NOT valid"
       ```
 
 {{% notice warning %}}
