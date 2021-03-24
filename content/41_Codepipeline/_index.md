@@ -4,11 +4,11 @@ chapter = true
 weight = 23
 +++
 
-# CI/CD with Codebuild , Codepipeline and Docker Compose
+# CI/CD with Codebuild, Codepipeline, and Docker Compose
 
 **Estimated Completion Time: 1 Hour**
 
-In the previous sections we have learned how to utilize Docker Compose, BuildKit, and Docker Hub to build our application as a container image and push that image to an container image repository. We then learned how to take that image and deploy it to Amazon ECS using the Docker Compose tool. In this section, we will learn how to automate the deployment process so that you don't have to conduct each one of these steps manually by building a CI/CD pipeline with AWS CodeBuild and AWS CodePipeline. 
+In the previous sections we have learned how to utilize Docker Compose, BuildKit, and Docker Hub to build our application as a container image and push that image to a container image repository. We then learned how to take that image and deploy it to Amazon ECS using the Docker Compose integration with ECS. In this section, we will learn how to automate the deployment process so that you don't have to conduct each one of these steps manually by building a CI/CD pipeline with AWS CodeBuild and AWS CodePipeline. 
 
 ### CI/CD Overview
 One of the most important things to understand before automating your deployment workflows is to understand the difference between CI (continuous integration) and CD (continuous deployment) as this concept can be confusing for users that are not familar with CI/CD concepts. Let's go ahead and break down the differences before we start building out our pipelines. 
@@ -22,4 +22,4 @@ Continuous Development (CD) is the process of automatically deploying all code c
 
 CD can also be known as continuous deployment which is different than continuous development as defined above. Continuous deployment actually goes a step further than continuous development in that every change that passes all stages of your production pipeline is released to your end users or customers. There is no human intervention and only a failed test will prevent a new change to be deployed to production. The benefit here is that you accelerate deployment times and your developer teams can focus on building software as they can see their work go live instantenously. 
 
-In the next section, we will introduce you to AWS CodeBuild and AWS CodePipeline. 
+In the following sections, we will introduce you to AWS CodeBuild and AWS CodePipeline along with setting up the different AWS resources we will be using to use our pipeline.
