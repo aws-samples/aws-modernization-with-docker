@@ -8,6 +8,10 @@ weight = 21
 
 Now that we have built the application locally, lets use Docker Compose to run our application locally. We will use `docker compose up` to start all the three services that we defined in our `docker-compose.yaml` file. We will use the [default context](https://docs.docker.com/engine/context/working-with-contexts/) to run the application locally. 
 
+
+![Docker](/images/running-application-locally.png)
+
+
 ```
 
 $ docker compose up
