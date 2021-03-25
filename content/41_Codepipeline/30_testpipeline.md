@@ -4,7 +4,7 @@ chapter = false
 weight = 21
 +++
 
-In this section we will push a code to our GitHub to demonstrate how CodePipeline orchestrates our deployment pipeline. We will make the following change to trigger our pipeline to run. Let's go ahead and add a route to our Flask application that returns "Hello World!" to demonstrate that our pipeline works. 
+In this section we will push a code change to our GitHub to demonstrate how CodePipeline orchestrates our deployment pipeline. We will make the following change to trigger our pipeline to run. Let's go ahead and add a route to our Flask application that returns "Hello World!" to demonstrate that our pipeline works. 
 
 We will add a route named /test to our Flask application that returns "Hello World!" and the following code changes should be made to backend/hello.py
 ```
