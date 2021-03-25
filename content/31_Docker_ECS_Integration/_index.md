@@ -64,25 +64,23 @@ As you can see, the `docker context create ecs` command takes a `CONTEXT` as par
 ```
 $ docker context create ecs ecs-workshop
 ? Create a Docker context using:  [Use arrows to move, type to filter]
-  An existing AWS profile
-> AWS secret and token credentials
-  AWS environment variables
+   An existing AWS profile
+   AWS secret and token credentials
+>  AWS environment variables
 
 ```
 
-The command recognizes that we did not provide a profile and will ask us to select one to use or create a new one. Let's create a new one. Move the arrow (`>`) so that it is pointing to the `AWS secret and token credentials` option and press enter.
+The command recognizes that we did not provide a profile and will ask us to select one to use or create a new one. Let's create a new one. Move the arrow (`>`) so that it is pointing to the `AWS environment variables` option and press enter.
 
 
-Now we are asked if we want to provide AWS credentials. Enter `us-east-1` for the region. 
+Now, lets fetch the credentials and set the enviroment variables
 
 ```
-$ docker context create ecs ecs-workshop
-? Create a Docker context using: AWS secret and token credentials
-Retrieve or create AWS Access Key and Secret on https://console.aws.amazon.com/iam/home?#security_credential
-? AWS Access Key ID YOUR_ACCESS_KEY
-? Enter AWS Secret Access Key ****************************************
-? Region us-east-1
-Successfully created ecs context "ecs-workshop"
+STS_RESPONSE=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance)
+export AWS_ACCESS_KEY_ID=$(echo $STS_RESPONSE | jq .AccessKeyId | tr -d \")
+export AWS_SECRET_ACCESS_KEY=$(echo $STS_RESPONSE | jq .SecretAccessKey | tr -d \")
+export AWS_SESSION_TOKEN=$(echo $STS_RESPONSE | jq .Token | tr -d \")
+export AWS_DEFAULT_REGION=us-east-1
 
 ```
 
