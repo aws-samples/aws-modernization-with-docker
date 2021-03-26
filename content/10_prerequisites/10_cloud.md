@@ -7,8 +7,7 @@ weight: 19
 ## Configure workspace for Docker Workshop
 
 {{% notice info %}}
-Cloud9 normally manages IAM credentials dynamically. This isn't currently compatible with
-the EKS IAM authentication, so we will disable it and rely on the IAM role instead.
+Cloud9 normally manages IAM credentials dynamically. However, for the purpose of this workshop, we need the temporary tokens to be in environment variables.
 {{% /notice %}}
 
 1. Return to your workspace and click the gear icon (in top right corner), or click to open a new tab and choose "Open Preferences"
@@ -23,45 +22,15 @@ the EKS IAM authentication, so we will disable it and rely on the IAM role inste
 
 
       ```sh
-      # Update awscli
       sudo pip install --upgrade awscli && hash -r
-
-      # Update Ubuntu packages/binaries
       sudo apt update
-
-      # Install jq command-line tool for parsing JSON, and bash-completion
-      sudo apt install jq gettext bash-completion moreutils
-
-      # Install yq for yaml processing
-      echo 'yq() {
-      docker run --rm -i -v "${PWD}":/workdir mikefarah/yq yq "$@"
-      }' | tee -a ~/.bashrc && source ~/.bashrc
-
-      # Verify the binaries are in the path and executable
-      for command in jq aws
-      do
-      which $command &>/dev/null && echo "$command in path" || echo "$command NOT FOUND"
-      done
-
-      # Remove existing credentials file.
+      sudo apt install jq gettext bash-completion moreutils -y
       rm -vf ${HOME}/.aws/credentials
-
-      # Set the ACCOUNT_ID and the region to work with our desired region
-      export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
-      test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
-
-      # Configure .bash_profile
       export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
-      echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
-      echo "export AWS_REGION=${AWS_REGION}" |
-      tee -a ~/.bash_profile
-      aws configure set default.region ${AWS_REGION}
-      aws configure get default.region
-
-      # Validate that our IAM role is valid.
-      aws sts get-caller-identity --query Arn | grep Docker-Workshop-Admin -q && echo "IAM role valid" || echo "IAM role NOT valid"
+      export STS_RESPONSE=$(aws sts assume-role --role-arn arn:aws:iam::${ACCOUNT_ID}:role/Docker-Workshop-Admin --role-session-name $(uuidgen) --duration-seconds 3600)
+      export AWS_ACCESS_KEY_ID=$(echo $STS_RESPONSE | jq .Credentials.AccessKeyId | tr -d \")
+      export AWS_SECRET_ACCESS_KEY=$(echo $STS_RESPONSE | jq .Credentials.SecretAccessKey | tr -d \")
+      export AWS_SESSION_TOKEN=$(echo $STS_RESPONSE | jq .Credentials.SessionToken | tr -d \")
+      export AWS_DEFAULT_REGION=us-east-1
+      
       ```
-
-{{% notice warning %}}
-If the IAM role is not valid, <span style="color: red;">**DO NOT PROCEED**</span>. Go back and confirm the steps on this page.
-{{% /notice %}}

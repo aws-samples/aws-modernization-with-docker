@@ -64,7 +64,6 @@ As you can see, the `docker context create ecs` command takes a `CONTEXT` as par
 ```
 $ docker context create ecs ecs-workshop
 ? Create a Docker context using:  [Use arrows to move, type to filter]
-   An existing AWS profile
    AWS secret and token credentials
 >  AWS environment variables
 
@@ -122,7 +121,7 @@ Create a file named `docker-pull-creds.json` and add the following to it. Amazon
 Run following to create a secret in AWS Secrets Manager and save the ARN (Amazon Resource Number) to an environment variable
 
 ```
-DOCKER_PULL_SECRETS_MANAGER=$(docker secret create pullcredentials /docker-compose-ecs-sample/docker-pull-creds.json)
+DOCKER_PULL_SECRETS_MANAGER=$(docker secret create pullcredentials docker-pull-creds.json)
 echo $DOCKER_PULL_SECRETS_MANAGER
 ```
 

@@ -38,7 +38,12 @@ DOCKER_HUB_ID=${DOCKER_HUB_ID} DOCKER_PULL_SECRETS_MANAGER=${DOCKER_PULL_SECRETS
 ```
 
 Notice that we are overlaying services.frontend.image property , mentioned in docker.compose.yaml with the one mentioned in  docker-compose.prod.migrate.yaml.
-We also supplied the environment variables `DOCKER_HUB_ID` and `DOCKER_PULL_SECRETS_MANAGER` , so that the compose file can use it. If you dont mention these values, you will get `invalid reference format` error.
+
+{{% notice info %}}
+We also supplied the environment variables `DOCKER_HUB_ID` and `DOCKER_PULL_SECRETS_MANAGER` , so that the compose file can use it. If you dont mention these values, you will get `invalid reference format` error. 
+{{% /notice %}}
+
+
 
 You can observe the AWS resources that are getting created. In around 10 minutes, all resources would get created successfully. 
 
@@ -132,27 +137,29 @@ Run `docker compose ps` to view the list of relevant services that were created 
 ```
 $ docker compose ps
 NAME                                                              SERVICE             STATUS              PORTS
-task/docker-compose-ecs-sample/9468e1f63a4d4b64a1df6cba7e1a9cf9   backend             Running             
-task/docker-compose-ecs-sample/a44a69616e4441d09f2a07b0b2d5db8e   db                  Running             
-task/docker-compose-ecs-sample/ed6893cac6d54d32a047f68dd0796365   frontend            Running             docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com:80->80/http
+task/docker-compose-ecs-sample/03edab2b86bf4908848dc110783534ca   frontend            Running             docke-LoadB-1CUH2S15TOP3G-9f4a862f40ce307b.elb.us-east-1.amazonaws.com:3000->3000/tcp
+task/docker-compose-ecs-sample/b1c2b46cbb7a49cc91accc7dd11d792d   db                  Running             
+task/docker-compose-ecs-sample/dd137043522843fe8ba85392f3b1175e   backend             Running  
 ```
 
-Access the URL mentioned above to access the application. Access the application , similarly how you accessed it locally in Module-1.
+Access the URL mentioned above to access the application. Access the application , similarly how you accessed it locally in Module-1. You can access it from any browser or using curl
+
+* Load the application (replace it from the frontend endpoint url from above step)
+
+```
+http://docke-LoadB-1CUH2S15TOP3G-9f4a862f40ce307b.elb.us-east-1.amazonaws.com:3000
+```
 
 * Insert records in database (replace it from the frontend endpoint url from above step)
 
 ```
-http://docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com/add/2/name2
-http://docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com/add/3/name3
-http://docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com/add/4/name4
+http://docke-LoadB-1CUH2S15TOP3G-9f4a862f40ce307b.elb.us-east-1.amazonaws.com:3000/add/2/name2
+http://docke-LoadB-1CUH2S15TOP3G-9f4a862f40ce307b.elb.us-east-1.amazonaws.com:3000/add/3/name3
+http://docke-LoadB-1CUH2S15TOP3G-9f4a862f40ce307b.elb.us-east-1.amazonaws.com:3000/add/4/name4
 
 ```
 
-* Retrieve records from database
 
-```
-http://docke-LoadB-1IG6ZHMFIHUKU-1808308980.us-east-1.elb.amazonaws.com/
-```
 
 You can run `docker compose logs` to stream the logs from AWS ECS Service.
 
