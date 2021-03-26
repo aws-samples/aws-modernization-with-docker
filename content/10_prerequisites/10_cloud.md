@@ -15,7 +15,7 @@ Cloud9 normally manages IAM credentials dynamically. However, for the purpose of
 2. Select **AWS SETTINGS** and turn off **AWS managed temporary credentials**
 
 3. Close the Preferences tab
-   ![cloud9-config](/images/cloud9-config.png)
+   ![cloud9-config](/images/c9disableiam.png)
 
 4. Copy and run (paste with **Ctrl+P**) the commands below.
    Before running it, review what it does by reading through the comments.

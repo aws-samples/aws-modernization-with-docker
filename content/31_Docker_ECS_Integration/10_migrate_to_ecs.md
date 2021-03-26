@@ -159,8 +159,6 @@ http://docke-LoadB-1CUH2S15TOP3G-9f4a862f40ce307b.elb.us-east-1.amazonaws.com:30
 
 ```
 
-
-
 You can run `docker compose logs` to stream the logs from AWS ECS Service.
 
 ```

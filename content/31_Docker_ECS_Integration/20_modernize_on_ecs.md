@@ -130,3 +130,26 @@ What did we just do ? `cat docker-compose.prod.rds.yaml` to inspect the file
 
 
 You can run the same application endpoints, but the requests will start going to the RDS instance instead.
+
+
+## Cleanup
+
+Run `docker compose down` to tear down the ECS environment by deleting the cloudformation templates
+
+```sh
+Admin:~/environment/docker-compose-ecs-sample (main) $ docker compose down
+[+] Running 11/13
+ ⠸ docker-compose-ecs-sample      DeleteInProgress User Initiated                                                                                                                                                          246.4s
+ ⠿ FrontendService                DeleteComplete          228.0s
+ ⠿ DefaultNetworkIngress          DeleteComplete            1.0s
+ ⠿ Frontnet3000Ingress            DeleteComplete            1.0s
+ ⠿ BacknetNetworkIngress          DeleteComplete            1.0s
+ ⠿ FrontnetNetworkIngress         DeleteComplete            1.0s
+ ⠿ FrontendTCP3000Listener        DeleteComplete            1.0s
+ ⠿ FrontendTaskDefinition         DeleteComplete            2.0s
+ ⠸ BackendService                 DeleteInProgress         15.4s
+ ⠿ FrontendServiceDiscoveryEntry  DeleteComplete            1.0s
+ ⠿ FrontendTCP3000TargetGroup     DeleteComplete            1.0s
+ ⠿ LoadBalancer                   DeleteComplete            1.0s
+ ⠿ FrontendTaskExecutionRole      DeleteComplete            2.0s
+ ```
