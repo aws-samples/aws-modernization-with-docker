@@ -52,16 +52,16 @@ Run the following on any browser to test that our application works.
 * Insert records in database
 
 ```
-http://localhost/add/2/name2
-http://localhost/add/3/name3
-http://localhost/add/4/name4
+curl http://localhost:3000/add/2/name2
+curl http://localhost:3000/add/3/name3
+curl http://localhost:3000/add/4/name4
 
 ```
 
 * Retrieve records from database
 
 ```
-http://localhost/80
+curl http://localhost:3000
 ```
 
 Great, now that the application is up and running locally, lets now see how to seamlessly and without much changes migrate the same application on to AWS.
@@ -74,6 +74,7 @@ List the networks created using `docker network ls`
 * Stop the application
 
 Hit `Cntrl + C` to stop the application. 
+If you start your application using `docker compose up -d`, then you may run `docker compose down` to stop the application.
 
 ## Summary 
 

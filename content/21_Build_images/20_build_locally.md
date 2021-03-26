@@ -43,7 +43,7 @@ services:
       context: ./proxy
     restart: always
     ports:
-      - 80:80
+      - 3000:80
     networks:
       - frontnet
     depends_on:

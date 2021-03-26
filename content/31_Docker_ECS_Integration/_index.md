@@ -114,7 +114,7 @@ Create a file named `docker-pull-creds.json` and add the following to it. Amazon
 ```
 {
    "username":"YOUR DOCKERHUB USERID",
-   "token":"YOUR DOCKERHUB TOKEN"
+   "password":"YOUR DOCKERHUB TOKEN or PASSWORD"
 }
 
 ```
