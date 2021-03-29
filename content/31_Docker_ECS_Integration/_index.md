@@ -106,7 +106,7 @@ AWS Secrets Manager Secrets Manager enables you to replace hardcoded credentials
 
 ### Create a secret in AWS Secrets Manager using your Docker Hub credentials
 
-Create a file named `docker-pull-creds.json` and add the following to it. Amazon ECS will use this token to retrieve the images from docker hub.
+Create a file named `docker-pull-creds.json` and add the following to it. Amazon ECS will use this token to retrieve the images from Docker Hub.
 
 `touch docker-pull-creds.json`
 

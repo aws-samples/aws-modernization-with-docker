@@ -107,10 +107,15 @@ $ git push
 ```
 
 If you go to the CodePipeline console you should see the following if our code changes were deployed properly. 
-(insert image)
+![Docker](/images/codepipeline-success.png)
 
-
-
-
+You will also notice that our pipeline zips up changes to our source code and puts that in our S3 bucket that is responsible for holding our artifact for our pipeline as seen below:
 
 ![Docker](/images/s3.png)
+
+The final test is to browse to the `/test` route in our app to see that our change was successfully made. Copy and paste the following to see the change made to our application. 
+```
+docker compose ps
+
+docke-LoadB-ZUJVKEFNFM4J-ce26ed3e7fa4dce7.elb.us-east-1.amazonaws.com:3000/test
+```

@@ -6,7 +6,9 @@ weight = 21
 
 ## Run the application locally
 
-Now that we have built the application locally, lets use Docker Compose to run our application locally. We will use `docker compose up` to start all the three services that we defined in our `docker-compose.yaml` file. We will use the [default context](https://docs.docker.com/engine/context/working-with-contexts/) to run the application locally. 
+Now that we have built the application locally, lets use Docker Compose to run our application locally. We will use `docker compose up` to start all the three services that we defined in our `docker-compose.yaml` file. We will use the [default context](https://docs.docker.com/engine/context/working-with-contexts/) to run the application locally.
+
+Please note that when we talk about testing our application locally, this is in reference to our virtual workspace environment via Cloud9. You will see later in this section that instead of being able to test our application by going to http://localhost:3000 in Chrome or Firefox, that we will be using the `curl` command to test our application instead. 
 
 
 ![Docker](/images/running-application-locally.png)

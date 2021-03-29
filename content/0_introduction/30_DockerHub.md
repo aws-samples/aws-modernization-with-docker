@@ -4,7 +4,7 @@ chapter = false
 weight = 30
 +++
 
-![Docker](/images/docker-ecs-overview.png)
+![Docker](/images/Moby-logo.png)
 
 ## Container Registries 
 
