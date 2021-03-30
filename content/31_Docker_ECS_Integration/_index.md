@@ -71,18 +71,6 @@ $ docker context create ecs ecs-workshop
 
 The command recognizes that we did not provide a profile and will ask us to select one to use or create a new one. Let's create a new one. Move the arrow (`>`) so that it is pointing to the `AWS environment variables` option and press enter.
 
-
-Now, lets fetch the credentials and set the enviroment variables
-
-```
-STS_RESPONSE=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance)
-export AWS_ACCESS_KEY_ID=$(echo $STS_RESPONSE | jq .AccessKeyId | tr -d \")
-export AWS_SECRET_ACCESS_KEY=$(echo $STS_RESPONSE | jq .SecretAccessKey | tr -d \")
-export AWS_SESSION_TOKEN=$(echo $STS_RESPONSE | jq .Token | tr -d \")
-export AWS_DEFAULT_REGION=us-east-1
-
-```
-
 Lets change the context to use AWS ECS by using `docker context use ecs-workshop`.
 
 
