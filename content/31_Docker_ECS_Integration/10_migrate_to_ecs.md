@@ -130,7 +130,15 @@ Local | Generated AWS resource | Purpose | More Information
 [docker service](https://docs.docker.com/engine/reference/commandline/service/) | [Amazon ECS Services] (https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html) and [Load Balancers] (https://aws.amazon.com/elasticloadbalancing) | 
 [Networking in Compose](https://docs.docker.com/compose/networking/) | [AWS CloudMap] (https://docs.docker.com/cloud/ecs-integration/#service-discovery) | Service Discovery | https://docs.docker.com/cloud/ecs-integration/#service-discovery
 
+
+To visualize how the application looks like in AWS when compared with local
+
+![Docker](/images/running-in-cloud-mapping.png)
+
+Below is the architecture for the application on aws
+
 ![Docker](/images/application-on-aws.png)
+
 
 Run `docker compose ps` to view the list of relevant services that were created on AWS . Note the load balancer URL for your frontend
 
