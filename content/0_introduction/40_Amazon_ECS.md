@@ -3,7 +3,7 @@ title = "Amazon ECS"
 chapter = false
 weight = 40
 +++
-![Docker] (/images/amazonecs.png)
+![Docker] (/images/docker-ecs-overview.png)
 
 ### What is Amazon ECS?
 

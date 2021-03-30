@@ -26,8 +26,8 @@ In terms of bringing immediate business value, the Docker Engine helps businesse
 
 - Provides intrisic security as the Docker Engine was built with security in mind. With Docker Content Trust and FIPS 140-2 validation, Docker Engine users can run containerized applications in highly regulated environments. 
 
-### Docker Engine Architecture
-![Docker](/images/engine-components-flow.png)
+### Docker Engine Overview
+![Docker](/images/docker-engine.png)
 
 Underneath the hood, Docker Engine is a client-server application with the following major components:
 

@@ -18,7 +18,7 @@ Containers and virtual machines have similar resource isolation and allocation b
 ### Virtual Machines (VM's)
 Virtual machines (VMs) are an abstraction of physical hardware turning one server into many servers. The hypervisor allows multiple VMs to run on a single machine. Each VM includes a full copy of an operating system, the application, necessary binaries and libraries - taking up tens of GBs. VMs can also be slow to boot. The diagram below gives a visual representation of what running a virtual machine would look like. 
 
-![Docker](images/container-vm-whatcontainer_2.png)
+![Docker](/images/container-vm-whatcontainer_2.png)
 
 ### Containers 
 Containers are an abstraction at the app layer that packages code and dependencies together. Multiple containers can run on the same machine and share the OS kernel with other containers, each running as isolated processes in user space. Containers take up less space than VMs (container images are typically tens of MBs in size), can handle more applications and require fewer VMs and Operating systems.
@@ -34,7 +34,7 @@ The main take away here is that by **abstracting** away the heavy lifting of app
 4. Reduced costs
 5. Increased agility 
 
-The question should also not be whether you should use containers or virtual machines but rather how can you utilize both to provide more flexibility in deploying and managing your applications. The main goal should be to increase agility for your developer teams and realistically speaking organizations need to understand how to utilize both in order to achieve these goals. 
+The question should also not be whether you should use containers or virtual machines but rather how can you utilize both to provide more flexibility in deploying and managing your applications. The main goal should be to increase agility for your developer teams and realistically speaking, **organizations need to understand how to utilize both in order to achieve these goals.**
 
 In the next section, we will dive into Dockers architecture and talk about the various components that have made Docker the most popular solution for building, managing, and deploying containerized applications.
 

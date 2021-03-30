@@ -19,7 +19,7 @@ Docker Hub is a great choice for sharing container images throughout your organi
 1. When using repositories within Docker Hub, you can iew recently pushed tags and automated builds on your repository page and easily filter through images as shown below:
 ![Docker](/images/Docker-Hub-Consolidation-Image-2.png)
 2. As an organization Owner, see team permissions across all of your repositories at a glance and you can even add existing Docker Hub users to a team via their email if you don't have their Docker ID on hand. 
-![Docker](/images/hub_org_page.png)
+![Docker](/images/docker-hub-org.png)
 3. Docker Hub can automatically test changes to your source code repositories using containers. You can enable Autotest on any Docker Hub repository to run tests on each pull request to the source code repository to create a continuous integration testing service. Enabling Autotest builds an image for testing purposes, but does not automatically push the built image to the Docker repository. We have included what this would look like in the UI below. 
 ![Docker](/images/index-dashboard.png)
 4. Access to cerified publisher images and plugins that pass Docker quality, best practice, and support requirements. These tests include the following: 

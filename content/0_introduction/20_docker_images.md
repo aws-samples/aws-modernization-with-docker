@@ -14,16 +14,16 @@ Now that we understand the general concepts around what a container image is, le
 Docker container images follow what is known as a layered architecture. Below is an example of a basic Dockerfile and to demonstrate let's break down what a layered architecture actually means. A Docker image is built up from a series of layers. Each layer represents an instruction in the image’s Dockerfile. Each layer except the very last one is read-only. Consider the following Dockerfile:
 
 ```
-FROM ubuntu:18.04
+FROM ubuntu:15.04
 COPY . /app
 RUN make /app
 CMD python /app/app.py
 ```
-This Dockerfile contains four commands, each of which creates a layer. The FROM statement starts out by creating a layer from the ubuntu:18.04 image. The COPY command adds some files from your Docker client’s current directory. The RUN command builds your application using the make command. Finally, the last layer specifies what command to run within the container.
+This Dockerfile contains four commands, each of which creates a layer. The FROM statement starts out by creating a layer from the ubuntu:15.04 image. The COPY command adds some files from your Docker client’s current directory. The RUN command builds your application using the make command. Finally, the last layer specifies what command to run within the container.
 
-Each layer is only a set of differences from the layer before it. The layers are stacked on top of each other. When you create a new container, you add a new writable layer on top of the underlying layers. This layer is often called the “container layer”. All changes made to the running container, such as writing new files, modifying existing files, and deleting files, are written to this thin writable container layer. The diagram below shows a container based on the Ubuntu 18.04 image.
+Each layer is only a set of differences from the layer before it. The layers are stacked on top of each other. When you create a new container, you add a new writable layer on top of the underlying layers. This layer is often called the “container layer”. All changes made to the running container, such as writing new files, modifying existing files, and deleting files, are written to this thin writable container layer. The diagram below shows a container based on the Ubuntu 15.04 image.
 
-![Docker](/images/container-layers.jpg)
+![Docker](/images/docker-layers.jpeg)
 
 What would happen if you were to change something in the Dockerfile and rebuilt the image? One of the major benefits of using Dockerfiles to build you container images is that only the **modified layers** get rebuilt. This is what makes container images lightweight, small, and fast compared to other virtualization technologies. 
 
