@@ -12,7 +12,10 @@ In this section, you'll learn how to automate Docker image builds and pushes to 
 
 First, let's create a buildspec.yml file for CodeBuild:
 
-```yaml
+Create the buildspec.yml file:
+
+```bash
+cat << 'EOF' > buildspec.yml
 version: 0.2
 
 phases:
@@ -39,28 +42,34 @@ phases:
       # Create latest tag
       - docker tag $DOCKERHUB_USERNAME/workshop-app:$IMAGE_TAG $DOCKERHUB_USERNAME/workshop-app:latest
       - docker push $DOCKERHUB_USERNAME/workshop-app:latest
+EOF
 ```
 
 ## 🔑 Setting Up Secrets
 
 Store your Docker Hub credentials securely:
 
-1. Open AWS Secrets Manager
+1. Open [AWS Secrets Manager](https://console.aws.amazon.com/secretsmanager)
+
+![Secrets Manager](/images/click-create-secret.png)
+
 2. Create new secret
-   - Name: `dockerhub-credentials`
+   - Secret Type: Other type of secret
    - Key/value pairs:
      - DOCKERHUB_USERNAME: Your Docker Hub username
      - DOCKERHUB_TOKEN: Your Docker Hub access token
+   - Name: `dockerhub-credentials`
+   - Click next and click Store
 
 ![Secrets Manager](/images/secrets-manager.png)
 
 ## 📋 Creating the Build Project
 
-1. Go to AWS CodeBuild
+1. Go to [AWS CodeBuild](console.aws.amazon.com/codesuite/codebuild/)
 2. Create build project:
    - Name: `docker-workshop-build`
    - Source: Your repository
-   - Environment: 
+   - Environment:
      - Use managed image
      - Operating System: Amazon Linux 2
      - Runtime: Standard
@@ -95,7 +104,7 @@ Ensure your CodeBuild role has these permissions:
             "Action": [
                 "secretsmanager:GetSecretValue"
             ],
-            "Resource": "arn:aws:secretsmanager:*:*㊙️dockerhub-credentials*"
+            "Resource": "arn:aws:secretsmanager:*:*dockerhub-credentials*"
         }
     ]
 }
