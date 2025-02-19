@@ -32,7 +32,7 @@ git submodule update
 
 Start the server with Hugo:
 ```
-hugo server
+hugo server -D
 ```
 
 Go to localhost: to view the content in your web browser of choice
