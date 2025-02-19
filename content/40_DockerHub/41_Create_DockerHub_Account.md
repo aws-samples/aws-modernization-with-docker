@@ -30,20 +30,24 @@ Docker Hub is a cloud-based registry service that allows you to:
 
 ![Account Details](/images/dockerhub-details.png)
 
-## 🔑 Access Token Creation
+## 🔑 Personal Access Token Creation
 
 For secure CLI access:
 
 1. Log into Docker Hub
 2. Click your username in top right
+
+![Docker Settings](/images/dockerhub-settings.png)
+
 3. Select "Account Settings"
 4. Go to "Security"
-5. Click "New Access Token"
+5. Click "Personal Access Tokens"
 
 ![Token Creation](/images/token-creation.png)
 
 6. Configure your token:
-   - Name: "Workshop Access"
+   - Name: "Docker Workshop Access"
+   - Expiration Date: This is up to you!
    - Access permissions: Read & Write
    - Click "Generate"
 

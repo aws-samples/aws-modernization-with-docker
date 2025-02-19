@@ -6,105 +6,97 @@ weight: 42
 
 # Docker Hub CLI Authentication
 
-In this section, you'll learn how to authenticate with Docker Hub via CLI and manage your images.
-
 ## 🔐 CLI Login
 
 1. Open your terminal
-2. Use the `docker login` command:
+2. Use the Docker login command:
 
 ```bash
-docker login
+docker login -u replace-with-your-username
 ```
 
-3. Enter your credentials when prompted:
-   - Username: Your Docker Hub username
-   - Password: Your access token (not your account password)
+3. Enter the Personal Access Token as your password.
 
-![CLI Login](/images/docker-cli-login.png)
+![Docker Login](/images/docker-cli-login.png)
 
-## 📦 Creating a Sample Image
+## 📦 Sample Application
 
-Let's create a simple web application to containerize:
+Clone the Rent-A-Room application:
 
 ```bash
-# Create a new directory
-mkdir docker-workshop
-cd docker-workshop
+git clone https://github.com/aws-samples/Rent-A-Room.git
+cd Rent-A-Room
 ```
 
-Create a Dockerfile:
+Create a Dockerfile in the root directory:
 
 ```dockerfile
+cat << 'EOF' > Dockerfile
+# Build stage
+FROM node:16-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Production stage
 FROM nginx:alpine
-COPY . /usr/share/nginx/html
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF
 ```
 
-Create a simple index.html:
+## 🏷️ Building and Pushing
 
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Docker Workshop</title>
-</head>
-<body>
-    <h1>Hello from Docker!</h1>
-</body>
-</html>
+```bash
+# REPLACE YOUR-DOCKER_USERNAME to set variable DOCKER_USERNAME
+DOCKER_USERNAME=YOUR-DOCKER_USERNAME
 ```
 
-## 🏷️ Image Tagging
-
-Build and tag your image:
+```bash
+# Confirm Docker username is properly set
+echo $DOCKER_USERNAME
+```
 
 ```bash
 # Build the image
-docker build -t workshop-app .
+docker build -t rent-a-room .
+```
 
+```bash
 # Tag for Docker Hub
-docker tag workshop-app YOUR_USERNAME/workshop-app:v1.0
+docker tag rent-a-room $DOCKER_USERNAME/rent-a-room:v1.0
 ```
-
-> Replace `YOUR_USERNAME` with your Docker Hub username
-
-## ⬆️ Pushing to Docker Hub
-
-Push your tagged image:
 
 ```bash
-docker push YOUR_USERNAME/workshop-app:v1.0
+# Push to Docker Hub
+docker push $DOCKER_USERNAME/rent-a-room:v1.0
 ```
 
-## ✅ Verification
+![Push Progress](/images/push-progress.png)
 
-Verify your push:
+## ✅ Testing Your Image
 
-1. Check local images:
+Pull and run your image locally:
+
 ```bash
-docker images
+docker run -d -p 3000:80 $DOCKER_USERNAME/rent-a-room:v1.0
 ```
 
-2. View on Docker Hub:
-   - Go to [Docker Hub](https://hub.docker.com)
-   - Navigate to your repositories
-   - You should see `workshop-app`
+Access the application at with this command in the Terminal:
+```bash
+echo "http://$(curl -s checkip.amazonaws.com):3000"
+```
 
-![Repository View](/images/repo-view.png)
+💡 **Pro Tip**:
 
-## 🔍 Common Commands
+- Mac users: Press ⌘ + click on the URL to open in browser
+- Windows users: Press Ctrl + click on the URL to open in browser
 
-| Command | Description |
-|---------|-------------|
-| `docker login` | Authenticate with Docker Hub |
-| `docker build -t name .` | Build image with tag |
-| `docker tag source:tag target:tag` | Create a new tag |
-| `docker push name:tag` | Push to registry |
-| `docker pull name:tag` | Pull from registry |
+**You should see the simple Rent A Room react app in your browser.**
 
 ## 🎯 Next Steps
 
-In the next section, we'll:
-1. Set up a CI/CD pipeline
-2. Automate image builds
-3. Configure automatic pushes to Docker Hub
+Next, we'll automate this process using AWS CodePipeline.
