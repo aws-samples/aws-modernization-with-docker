@@ -1,60 +1,107 @@
++++
+title = "Step 1: Sample Application Overview"
+chapter = false
+weight = 21
++++
+
+# **Sample Application Overview**
+
+This module introduces the **Rent-A-Room** sample application, a full-stack web app built with **Flask (backend), MySQL (database), and NGINX (webserver)**. The application is containerized using Docker and can be deployed both locally and in the cloud.
+
+![Docker](/images/application-overview.png)
+
+## **Application Components**
+
+- **Frontend:** Static files served via NGINX.
+- **Container Orchestration:** Managed with Docker Compose.
+
 ---
-title: "Docker Hub Overview"
-chapter: true
-weight: 40
+
+## **Getting the Sample Code**
+
+The source code for this module is available on GitHub. Follow these steps to get started:
+
+### **1. Fork the Repository**
+
+Login to your GitHub account and fork the repo:
+
+[GitHub Repo](https://github.com/aws-samples/Rent-A-Room)
+
+### **2. Clone the Repository**
+
+Run the following command to clone the repository to your local environment:
+
+```sh
+$ git clone https://github.com/your-github-username/Rent-A-Room.git
+$ cd Rent-A-Room
+```
+
+### **3. Navigate to the Working Directory**
+
+If using AWS Cloud9 or a local dev environment, navigate to the cloned repository:
+
+```sh
+cd ~/environment/Rent-A-Room
+```
+
+Your Cloud9 file directory should now resemble the following:
+
+![Docker](/images/docker-clone.png)
+
 ---
 
-# Docker Hub Integration
+## **Building and Pushing the Docker Image**
 
-## What is Docker Hub?
+To containerize the application, follow these steps:
 
-Docker Hub is Docker's official cloud-based registry service that enables you to:
-- Store and distribute container images
-- Find and pull official images
-- Share your container images with your team or the public
-- Automate image builds and deployments
+### **1. Set up your Docker username**
 
-![Docker Hub Interface](/images/dockerhub-home.png)
+```sh
+DOCKER_USERNAME=YOUR-DOCKER_USERNAME
+```
 
-## Why Use Docker Hub?
+### **2. Confirm Docker username is properly set**
 
-Key benefits include:
-- **Central Repository**: Store all your container images in one place
-- **Version Control**: Maintain different versions of your images
-- **Official Images**: Access to verified, up-to-date base images
-- **Automation**: Integrate with CI/CD pipelines
-- **Collaboration**: Share images across teams and organizations
+```sh
+echo $DOCKER_USERNAME
+```
 
-## Workshop Objectives
+### **3. Build the Docker image**
 
-In this module, you'll learn how to:
-1. Create and configure a Docker Hub account
-2. Authenticate with Docker Hub via CLI
-3. Push container images to Docker Hub
-4. Integrate Docker Hub with AWS CodePipeline
+```sh
+docker build -t rent-a-room .
+```
 
-## Module Overview
+### **4. Tag the image for Docker Hub**
 
-| Section | Description |
-|---------|-------------|
-| **Account Setup** | Create Docker Hub account and access tokens |
-| **CLI Authentication** | Login and manage Docker Hub via command line |
-| **Image Management** | Build, tag, and push images |
-| **CI/CD Integration** | Automate builds with AWS CodePipeline |
+```sh
+docker tag rent-a-room $DOCKER_USERNAME/rent-a-room:v1.0
+```
 
-## Prerequisites
+### **5. Push the image to Docker Hub**
 
-Before starting this module, ensure you have:
-- Docker installed on your machine
-- Access to AWS Console
-- Basic understanding of containers
-- Git repository for your code
+```sh
+docker push $DOCKER_USERNAME/rent-a-room:v1.0
+```
 
-## 🎯 Getting Started
+![Push Progress](/images/push-progress.png)
 
-Ready to begin? Let's:
-1. Set up your Docker Hub account
-2. Learn essential Docker commands
-3. Automate your container workflows
+### **6. Test the Docker Image Locally**
 
-Choose **Next** to begin!
+Run the container locally:
+
+```sh
+docker run -d -p 3000:80 $DOCKER_USERNAME/rent-a-room:v1.0
+```
+
+Retrieve the application URL:
+
+```sh
+echo "http://$(curl -s checkip.amazonaws.com):3000"
+```
+
+---
+
+## **Next Steps**
+
+Now that you have cloned the repository and containerized the application, proceed to the next module to **deploy it in a cloud environment**.
