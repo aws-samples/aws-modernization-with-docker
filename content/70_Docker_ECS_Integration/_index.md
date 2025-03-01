@@ -1,7 +1,7 @@
 +++
-title = "Module 2"
+title = "Amazon ECS"
 chapter = true
-weight = 22
+weight = 72
 +++
 
 # Deploy an Application to AWS Using the Docker Amazon ECS Plugin

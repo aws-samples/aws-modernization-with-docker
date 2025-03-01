@@ -1,5 +1,5 @@
 +++
-title = "Module 1"
+title = "Docker Suite Overview"
 chapter = true
 weight = 21
 +++

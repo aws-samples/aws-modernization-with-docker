@@ -1,5 +1,5 @@
 +++
-title = "Module 3"
+title = "CICD Overview"
 chapter = true
 weight = 23
 +++
