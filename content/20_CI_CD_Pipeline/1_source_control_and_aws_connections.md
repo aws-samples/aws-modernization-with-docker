@@ -1,6 +1,5 @@
-1_source_control_and_aws_connections
 +++
-title = "Step 1: Source Control and AWS CodeConnections"
+title = "Source Control and AWS CodeConnections"
 chapter = true
 weight = 21
 +++

@@ -1,5 +1,5 @@
 +++
-title = "Step 3: Creation of AWS CodePipeline"
+title = "Step 2: Creation of AWS CodePipeline"
 chapter = false
 weight = 21
 +++
