@@ -76,6 +76,6 @@ Continuous Delivery lets developers automate testing beyond just unit tests so t
 
 With Continuous Delivery, every code change is built, tested, and then pushed to a non-production testing or staging environment. There can be multiple, parallel test stages before a production deployment. The difference between Continuous Delivery and Continuous Deployment is the presence of a manual approval to update to production. With Continuous Deployment, production happens automatically without explicit approval.
 
-![Docker](/images/cicdpipeline3.png)
+![Docker](/images/cicdpipeline4.png)
 
 Continuous Deployment automates the entire software release process. Every revision that is committed triggers an automated flow that builds, tests, and then stages the update. The final decision to deploy to a live production environment is triggered by the developer.
