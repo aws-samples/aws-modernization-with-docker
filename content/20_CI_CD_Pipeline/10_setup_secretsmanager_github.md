@@ -1,8 +1,8 @@
-+++
-title = "Step 1: Add GitHub credentials to AWS Secrets Manager"
-chapter = false
-weight = 21
-+++
+---
+title: "Step 1: Add GitHub credentials to AWS Secrets Manager"
+chapter: false
+weight: 21
+---
 
 We will be using GitHub to store all of our code assets and in order for us to use GitHub with our CI/CD pipeline we need to authorize CodePipeline and CodeBuild to use GitHub as its source to kick off our build. In this section we will teach you how to store a GitHub OAuth token in Secrets Manager for us to use later in this module. 
 
