@@ -77,6 +77,7 @@ git push origin main
 
 ## **✅ Summary**
 By adding this `post_build` phase, your AWS **CodeBuild** step will now:
+
 ✅ **Build the image**  
 ✅ **Push it to Docker Hub**  
 
