@@ -1,8 +1,8 @@
-+++
-title = "Step 1: Sample Application Overview"
-chapter = false
-weight = 21
-+++
+---
+title: "Step 1: Sample Application Overview"
+chapter: false
+weight: 21
+---
 
 # **Sample Application Overview**
 
