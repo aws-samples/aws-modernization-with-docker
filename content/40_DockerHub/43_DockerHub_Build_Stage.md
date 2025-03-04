@@ -4,6 +4,7 @@ chapter = false
 weight = 41
 ---
 
+
 # 🐳 Docker Hub Integration – CodePipeline Perspective
 
 Now that we’ve built our Docker images using **Docker Build Cloud**, we need to **push them to Docker Hub**. This section will:
