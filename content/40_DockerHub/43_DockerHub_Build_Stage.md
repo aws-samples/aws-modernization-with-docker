@@ -1,143 +1,82 @@
 ---
-title: "Automating Docker Hub Pushes"
-chapter: true
-weight: 43
+title = "Docker Hub Integration – CodePipeline Perspective"
+chapter = false
+weight = 41
 ---
 
-# Automating Docker Hub Pushes with AWS CodePipeline
+# 🐳 Docker Hub Integration – CodePipeline Perspective
 
-In this section, you'll learn how to automate Docker image builds and pushes to Docker Hub using AWS CodePipeline.
+Now that we’ve built our Docker images using **Docker Build Cloud**, we need to **push them to Docker Hub**. This section will:
+- ✅ **Append a `post_build` phase** to `buildspec.yml` to **automate pushing images**.
+- ✅ **Explain what was added** so you understand its purpose.
 
-## 🛠️ CodeBuild Configuration
+---
 
-First, let's create a buildspec.yml file for CodeBuild:
+## **1️⃣ Updating `buildspec.yml` to Push to Docker Hub**
 
-Create the buildspec.yml file:
+In the previous section, **Docker Build Cloud** built the image but did **not push it**.  
+Now, we’ll **add a `post_build` phase** to push the image to Docker Hub.
+
+### **📌 Appending the `post_build` Phase**
+
+Run the following command to append the **new `post_build` phase** **before** the `artifacts` section in `buildspec.yml`:
 
 ```bash
-cat << 'EOF' > buildspec.yml
-version: 0.2
-
-phases:
-  pre_build:
-    commands:
-      # Login to Docker Hub
-      - echo Logging in to Docker Hub...
-      - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_TOKEN
-      # Get commit hash for tagging
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-  
-  build:
-    commands:
-      # Build Docker image
-      - echo Building the Docker image...
-      - docker build -t $DOCKERHUB_USERNAME/workshop-app:$IMAGE_TAG .
-  
-  post_build:
-    commands:
-      # Push to Docker Hub
-      - echo Pushing the Docker image...
-      - docker push $DOCKERHUB_USERNAME/workshop-app:$IMAGE_TAG
-      # Create latest tag
-      - docker tag $DOCKERHUB_USERNAME/workshop-app:$IMAGE_TAG $DOCKERHUB_USERNAME/workshop-app:latest
-      - docker push $DOCKERHUB_USERNAME/workshop-app:latest
-EOF
+sed -i '/artifacts:/i\
+  post_build:\
+    commands:\
+      - echo Build completed on `date`\
+      - echo Pushing the Docker image to Docker Hub...\
+      - docker push $DOCKER_USERNAME/myapp:latest\
+' buildspec.yml
 ```
 
-## 🔑 Setting Up Secrets
+---
 
-Store your Docker Hub credentials securely:
+## **2️⃣ Verify the Changes**
+Once the command runs, check the updated `buildspec.yml`:
 
-1. Open [AWS Secrets Manager](https://console.aws.amazon.com/secretsmanager)
-
-![Secrets Manager](/images/click-create-secret.png)
-
-2. Create new secret
-   - Secret Type: Other type of secret
-   - Key/value pairs:
-     - DOCKERHUB_USERNAME: Your Docker Hub username
-     - DOCKERHUB_TOKEN: Your Docker Hub access token
-   - Name: `dockerhub-credentials`
-   - Click next and click Store
-
-![Secrets Manager](/images/secrets-manager.png)
-
-## 📋 Creating the Build Project
-
-1. Go to [AWS CodeBuild](console.aws.amazon.com/codesuite/codebuild/)
-2. Create build project:
-   - Name: `docker-workshop-build`
-   - Source: Your repository
-   - Environment:
-     - Use managed image
-     - Operating System: Amazon Linux 2
-     - Runtime: Standard
-     - Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
-   - Privileged: ✅ Enable this flag for Docker builds
-
-![CodeBuild Setup](/images/codebuild-setup.png)
-
-## 🔄 Setting Up CodePipeline
-
-1. Create new pipeline:
-   - Name: `docker-workshop-pipeline`
-   - Source: Your repository
-   - Build: Use the CodeBuild project we created
-
-2. Add environment variables from Secrets Manager:
-   - DOCKERHUB_USERNAME: From secrets
-   - DOCKERHUB_TOKEN: From secrets
-
-![Pipeline Setup](/images/pipeline-setup.png)
-
-## 🔧 IAM Role Configuration
-
-Ensure your CodeBuild role has these permissions:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "secretsmanager:GetSecretValue"
-            ],
-            "Resource": "arn:aws:secretsmanager:*:*dockerhub-credentials*"
-        }
-    ]
-}
+```bash
+cat buildspec.yml
 ```
 
-## ✅ Testing the Pipeline
+---
 
-1. Make a change to your repository
-2. Commit and push
-3. Watch the pipeline execute:
-   - Source stage pulls changes
-   - Build stage builds and pushes image
-   - Check Docker Hub for new image
+## **3️⃣ Explanation of What We Added**
 
-![Pipeline Execution](/images/pipeline-execution.png)
+The **new `post_build` phase** ensures that after a successful build, the **Docker image is pushed to Docker Hub**.
 
-## 🔍 Troubleshooting
+```yaml
+post_build:
+  commands:
+    - echo Build completed on `date`
+    - echo Pushing the Docker image to Docker Hub...
+    - docker push \$DOCKER_USERNAME/myapp:latest
+```
 
-Common issues:
-1. **Build Fails**:
-   - Check Docker Hub credentials
-   - Verify Secrets Manager access
-   - Ensure Docker daemon is running
+### **📌 What Does This Do?**
+✅ **`echo Build completed on `date``** – Logs the build completion time.  
+✅ **`echo Pushing the Docker image to Docker Hub...`** – Provides a status message.  
+✅ **`docker push \$DOCKER_USERNAME/myapp:latest`** – Pushes the built image to Docker Hub.  
 
-2. **Push Fails**:
-   - Verify Docker Hub token permissions
-   - Check network connectivity
-   - Review Docker Hub quota limits
+---
 
-## 🎯 Next Steps
+## **4️⃣ Next Steps**
+1️⃣ **Run the `sed` command** to modify `buildspec.yml`.  
+2️⃣ **Use `cat buildspec.yml`** to verify the changes.  
+3️⃣ **Commit the updated file to your repository**:
 
-You can now:
-1. Automatically build Docker images
-2. Push to Docker Hub on commits
-3. Maintain versioned images
-4. Use latest image tags
+```bash
+git add buildspec.yml
+git commit -m "Added post_build phase to push images to Docker Hub"
+git push origin main
+```
+
+---
+
+## **✅ Summary**
+By adding this `post_build` phase, your AWS **CodeBuild** step will now:
+✅ **Build the image**  
+✅ **Push it to Docker Hub**  
+
+This ensures a fully **automated** process within **AWS CodePipeline**. 🚀  
