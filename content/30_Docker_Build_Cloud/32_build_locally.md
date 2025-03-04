@@ -1,8 +1,8 @@
-+++
-title = "Step 2: Build Image Locally"
-chapter = false
-weight = 21
-+++
+---
+title: "Step 2: Build Image Locally"
+chapter: false
+weight: 21
+---
 
 # **Building the Image Locally (`docker build`)**
 
