@@ -1,8 +1,8 @@
-+++
-title = "Module 3"
-chapter = true
-weight = 23
-+++
+---
+title: "Module 3"
+chapter: true
+weight: 23
+---
 
 # CI/CD with Codebuild, Codepipeline, and Docker Compose
 
