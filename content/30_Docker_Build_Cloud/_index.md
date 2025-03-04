@@ -1,8 +1,8 @@
-+++
-title = "Build with Docker"
-chapter = true
-weight = 30
-+++
+---
+title: "Build with Docker"
+chapter: true
+weight: 30
+---
 
 # **1. Build with Docker**
 
