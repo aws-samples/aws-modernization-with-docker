@@ -1,8 +1,8 @@
-+++
-title = "Step 4: Build with Docker Build Cloud"
-chapter = false
-weight = 34
-+++
+---
+title: "Step 4: Build with Docker Build Cloud"
+chapter: false
+weight: 34
+---
 
 ## **Prerequisites(TODO: Add package caching story)**
 
