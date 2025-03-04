@@ -1,8 +1,8 @@
-+++
-title = "Step 3: Run Application Locally"
-chapter = false
-weight = 21
-+++
+---
+title: "Step 3: Run Application Locally"
+chapter: false
+weight: 21
+---
 
 # Run the application locally
 
