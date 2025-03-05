@@ -167,10 +167,10 @@ Now, let’s walk through the **actual `pipeline.yml` file** step by step.
 ```
 🔹 **What’s happening?**
 
-✅ Pulls the **latest source code** from GitHub.  
-✅ Uses **AWS Secrets Manager** to retrieve the **GitHub OAuth Token** securely.
-✅ Specifies the GitHub repository owner and repository name using CloudFormation parameters.
-✅ Targets the 'main' branch of the repository.
+✅ Pulls the **latest source code** from GitHub.   
+✅ Uses **AWS Secrets Manager** to retrieve the **GitHub OAuth Token** securely.   
+✅ Specifies the GitHub repository owner and repository name using CloudFormation parameters.   
+✅ Targets the 'main' branch of the repository.   
 ---
 
 #### **2️⃣ Build Stage**
@@ -192,11 +192,11 @@ Now, let’s walk through the **actual `pipeline.yml` file** step by step.
 ```
 🔹 **What’s happening?**  
 
-✅ Runs AWS CodeBuild to execute the buildspec.yml file in the source code.
-✅ Uses the CodeBuild project named "docker-build-cloud-project" for the build process.
-✅ Takes the SourceCode artifact from the previous stage as input.
-✅ Builds the Docker image based on instructions in the buildspec, but does not push it yet.
-✅ Prepares the Docker image for later stages (like pushing to DockerHub or scanning with Docker Scout).
+✅ Runs AWS CodeBuild to execute the buildspec.yml file in the source code.   
+✅ Uses the CodeBuild project named "docker-build-cloud-project" for the build process.   
+✅ Takes the SourceCode artifact from the previous stage as input.   
+✅ Builds the Docker image based on instructions in the buildspec, but does not push it yet.   
+✅ Prepares the Docker image for later stages (like pushing to DockerHub or scanning with Docker Scout).   
 
 ---
 
