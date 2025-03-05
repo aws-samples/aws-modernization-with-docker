@@ -45,6 +45,36 @@ aws secretsmanager list-secrets --query "SecretList[?Name=='dockerhub-credential
 ---
 
 ## **2️⃣ Understanding `buildspec.yml`**
+
+```bash
+cat <<EOF > buildspec.yml
+version: 0.2
+
+env:
+  secrets-manager:
+    DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
+    DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Docker Hub...
+      - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+      - echo Setting up Docker Buildx...
+      - docker buildx create --name mybuilder --use
+      - docker buildx inspect --bootstrap
+
+  build:
+    commands:
+      - echo Building Docker image using BuildKit...
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load .
+
+artifacts:
+  files:
+    - '**/*'
+EOF
+```
+
 The **`buildspec.yml`** file is a **YAML configuration file** that tells **AWS CodeBuild** what steps to take during a build. It includes:
 
 ✅ **Environment setup** (e.g., Secrets Manager for credentials)  
