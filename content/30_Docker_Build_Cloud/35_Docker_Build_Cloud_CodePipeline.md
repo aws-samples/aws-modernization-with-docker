@@ -165,7 +165,8 @@ Now, let’s walk through the **actual `pipeline.yml` file** step by step.
         - Name: SourceCode
       RunOrder: 1
 ```
-🔹 **What’s happening?**  
+🔹 **What’s happening?**
+
 ✅ Pulls the **latest source code** from GitHub.  
 ✅ Uses **AWS Secrets Manager** to retrieve the **GitHub OAuth Token** securely.
 ✅ Specifies the GitHub repository owner and repository name using CloudFormation parameters.
@@ -190,6 +191,7 @@ Now, let’s walk through the **actual `pipeline.yml` file** step by step.
         - Name: BuildOutput
 ```
 🔹 **What’s happening?**  
+
 ✅ Runs AWS CodeBuild to execute the buildspec.yml file in the source code.
 ✅ Uses the CodeBuild project named "docker-build-cloud-project" for the build process.
 ✅ Takes the SourceCode artifact from the previous stage as input.
