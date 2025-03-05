@@ -66,7 +66,7 @@ phases:
   build:
     commands:
       - echo Building Docker image using BuildKit...
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load .
 
   post_build:
     commands:
