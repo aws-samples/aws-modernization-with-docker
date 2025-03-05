@@ -25,14 +25,19 @@ The source code for this module is available on GitHub. Follow these steps to ge
 
 This is needed only if you want to update the frontend youself:
 
-Login to your GitHub account and fork the [GitHub Repo](https://github.com/aws-samples/Rent-A-Room).
+Login to your GitHub account and fork the [GitHub Repo](https://github.com/aws-samples/Rent-A-Room/fork).
 
 ### **1. Clone the Repository**
 
-Run the following command to clone the repository to your local environment:
+Once the fork had been created, click on the Green `Code` button and copy your repo's URL and update the `REPO_URL` variable with your Repo URL:
 
 ```sh
-$ git clone https://github.com/aws-samples/Rent-A-Room.git
+REPO_URL=replae-me-with-your-repo-url.git
+```
+
+```sh
+echo $REPO_URL
+$ git clone $REPO_URL
 ```
 
 ### **2. Navigate to the Working Directory**
