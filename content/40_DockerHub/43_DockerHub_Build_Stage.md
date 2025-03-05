@@ -1,7 +1,7 @@
 ---
 title: "Docker Hub Integration – CodePipeline Perspective"
 chapter: false
-weight: 41
+weight: 43
 ---
 
 # 🐳 Docker Hub Integration – CodePipeline Perspective
