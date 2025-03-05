@@ -33,6 +33,8 @@ aws secretsmanager create-secret --name dockerhub-credentials \
 
 ✅ This command securely stores **DOCKER_USERNAME** and **DOCKER_TOKEN** in **AWS Secrets Manager**.  
 
+---
+
 ### **✅ Verify Secret Creation**
 Run the following to confirm the secret exists:
 
@@ -167,10 +169,11 @@ Now, let’s walk through the **actual `pipeline.yml` file** step by step.
 ```
 🔹 **What’s happening?**
 
-✅ Pulls the **latest source code** from GitHub.   
-✅ Uses **AWS Secrets Manager** to retrieve the **GitHub OAuth Token** securely.   
-✅ Specifies the GitHub repository owner and repository name using CloudFormation parameters.   
-✅ Targets the 'main' branch of the repository.   
+✅ Pulls the **latest source code** from GitHub.  
+✅ Uses **AWS Secrets Manager** to retrieve the **GitHub OAuth Token** securely.    
+✅ Specifies the GitHub repository owner and repository name using CloudFormation parameters.  
+✅ Targets the 'main' branch of the repository.  
+
 ---
 
 #### **2️⃣ Build Stage**
