@@ -1,5 +1,5 @@
 ---
-title: "Step 2: Build Image Locally"
+title: "Build Image Locally"
 chapter: false
 weight: 21
 ---
@@ -8,11 +8,56 @@ weight: 21
 
 ## **Steps**
 
-1. **Clone the repository(If not already done):**
-   ```sh
-   git clone https://github.com/aws-samples/Rent-A-Room.git
-   cd Rent-A-Room
-   ```
+### ** Fork the Repository**
+
+Login to your GitHub account and fork the [GitHub Repo](https://github.com/aws-samples/Rent-A-Room/fork).
+
+### **1. Clone the Repository**
+
+Once the fork had been created, click on the Green `Code` button and copy your repo's URL and update the `REPO_URL` variable with your Repo URL:
+
+```sh
+REPO_URL=replae-me-with-your-repo-url.git
+```
+
+```sh
+echo $REPO_URL
+$ git clone $REPO_URL
+```
+
+### **2. Navigate to the Working Directory**
+
+If using a local development environment, navigate to the cloned repository:
+
+```sh
+$ cd Rent-A-Room
+```
+
+### **3. Creating the Dockerfile**
+
+Save the following content in a file named **Dockerfile**:
+
+```
+cat << 'EOF' > Dockerfile
+# Build stage
+FROM node:12 as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM nginx:1.14
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+```
+
+---
+
+
 2. **Run the local build command:**
    Run the following to build the image:
    ```sh
@@ -49,34 +94,6 @@ docker build -t rent-a-room .
 - **Faster builds** due to **parallel execution**.
 - **Better caching** and reuse of unchanged layers.
 - **Security improvements** with **automatic secrets masking**.
-
----
-
-## **Creating a Build Stage in a CI/CD Pipeline**
-
-To integrate Docker image builds into a **CI/CD pipeline**, use **GitHub Actions** or **AWS CodeBuild**.
-
-### **Docker Hub Image Deployment(TODO: work with pjv)**
-
-```sh
-# REPLACE YOUR-DOCKER_USERNAME to set variable DOCKER_USERNAME
-DOCKER_USERNAME=YOUR-DOCKER_USERNAME
-```
-
-```sh
-# Confirm Docker username is properly set
-echo $DOCKER_USERNAME
-```
-
-```sh
-# Tag the image for Docker Hub
-docker tag rent-a-room $DOCKER_USERNAME/rent-a-room:v1.0
-```
-
-```sh
-# Push the image to Docker Hub
-docker push $DOCKER_USERNAME/rent-a-room:v1.0
-```
 
 ---
 
