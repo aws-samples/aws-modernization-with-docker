@@ -46,6 +46,8 @@ aws secretsmanager list-secrets --query "SecretList[?Name=='dockerhub-credential
 
 ## **2️⃣ Understanding `buildspec.yml`**
 
+Run this command below to create your buildspec file.
+
 ```bash
 cat <<EOF > buildspec.yml
 version: 0.2
