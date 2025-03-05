@@ -4,12 +4,12 @@ chapter: false
 weight: 41
 ---
 
-
 # 🐳 Docker Hub Integration – CodePipeline Perspective
 
 Now that we’ve built our Docker images using **Docker Build Cloud**, we need to **push them to Docker Hub**. This section will:
 - ✅ **Append a `post_build` phase** to `buildspec.yml` to **automate pushing images**.
-- ✅ **Explain what was added** so you understand its purpose.
+- ✅ **Provide a fully updated `buildspec.yml` file**.
+- ✅ **Show an updated `pipeline.yml` configuration** to integrate with AWS CodePipeline.
 
 ---
 
@@ -43,42 +43,121 @@ cat buildspec.yml
 
 ---
 
-## **3️⃣ Explanation of What We Added**
-
-The **new `post_build` phase** ensures that after a successful build, the **Docker image is pushed to Docker Hub**.
+## **3️⃣ Fully Updated `buildspec.yml`**
+Here is what your **final `buildspec.yml`** should look like **after** adding Docker Hub push automation:
 
 ```yaml
-post_build:
-  commands:
-    - echo Build completed on `date`
-    - echo Pushing the Docker image to Docker Hub...
-    - docker push \$DOCKER_USERNAME/myapp:latest
-```
+version: 0.2
 
-### **📌 What Does This Do?**
-✅ **`echo Build completed on `date``** – Logs the build completion time.  
-✅ **`echo Pushing the Docker image to Docker Hub...`** – Provides a status message.  
-✅ **`docker push \$DOCKER_USERNAME/myapp:latest`** – Pushes the built image to Docker Hub.  
+env:
+  secrets-manager:
+    DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
+    DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Docker Hub...
+      - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+      - echo Setting up Docker Buildx...
+      - docker buildx create --name mybuilder --use
+      - docker buildx inspect --bootstrap
+
+  build:
+    commands:
+      - echo Building Docker image using BuildKit...
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image to Docker Hub...
+      - docker push $DOCKER_USERNAME/myapp:latest
+
+artifacts:
+  files:
+    - '**/*'
+```
 
 ---
 
-## **4️⃣ Next Steps**
-1️⃣ **Run the `sed` command** to modify `buildspec.yml`.  
-2️⃣ **Use `cat buildspec.yml`** to verify the changes.  
-3️⃣ **Commit the updated file to your repository**:
+## **4️⃣ Fully Updated `pipeline.yml`**
+To fully integrate **Docker Hub** into **AWS CodePipeline**, update the pipeline configuration.
+
+Run the following command to **update or create `pipeline.yml`**:
 
 ```bash
-git add buildspec.yml
-git commit -m "Added post_build phase to push images to Docker Hub"
+cat <<EOF > pipeline.yml
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: DockerCI-CD-Pipeline
+      RoleArn: arn:aws:iam::123456789012:role/CodePipelineRole
+      ArtifactStore:
+        Type: S3
+        Location: my-codepipeline-artifacts-bucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: "REPLACE_WITH_YOUR_GITHUB_USERNAME"
+                Repo: "REPLACE_WITH_YOUR_GITHUB_REPO"
+                Branch: "main"
+                OAuthToken: "{{resolve:secretsmanager:GitHub/Token}}"
+              OutputArtifacts:
+                - Name: SourceArtifact
+
+        - Name: Build
+          Actions:
+            - Name: BuildDockerImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: docker-build-cloud-project
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildOutput
+EOF
+```
+
+---
+
+## **5️⃣ Explanation of What Was Added**
+This update **fully integrates Docker Hub into AWS CodePipeline**, ensuring images are pushed after a successful build.
+
+### **🔹 Key Enhancements**
+✅ **Docker Image Push (`post_build` phase)**  
+- **Pushes the built image** to Docker Hub **after the build** is successful.  
+- **Ensures images are updated and available** for deployments.
+
+✅ **Updated CodePipeline Configuration**
+- **Ensures Docker Hub push automation**.
+- **Maintains a fully automated CI/CD pipeline**.
+
+---
+
+## **6️⃣ Next Steps**
+1️⃣ **Run the `sed` command** to update `buildspec.yml`.  
+2️⃣ **Verify with `cat buildspec.yml`**.  
+3️⃣ **Generate the new `pipeline.yml` file**.  
+4️⃣ **Commit and push the changes**:
+
+```bash
+git add buildspec.yml pipeline.yml
+git commit -m "Automated Docker Hub push integration in CodePipeline"
 git push origin main
 ```
 
----
-
-## **✅ Summary**
-By adding this `post_build` phase, your AWS **CodeBuild** step will now:
-
-✅ **Build the image**  
-✅ **Push it to Docker Hub**  
-
-This ensures a fully **automated** process within **AWS CodePipeline**. 🚀  
+Now, your AWS **CodePipeline will automatically build and push images to Docker Hub**! 🚀
