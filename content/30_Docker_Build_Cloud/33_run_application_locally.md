@@ -33,21 +33,20 @@ docker ps
 
 ---
 
-## **Verify the Application is Running**
-
 ### **Test the Application in a Browser**
 
-Once the container is running, access the application in your browser:
-
+Access the application at with this command in the Terminal:
+```bash
+echo "http://$(curl -s checkip.amazonaws.com):3000"
 ```
-http://localhost:3000
-```
 
-### **Test the Application with `curl`**
+💡 **Pro Tip**:
 
-```sh
-curl http://localhost:3000
-```
+- Mac users: Press ⌘ + click on the URL to open in browser
+- Windows users: Press Ctrl + click on the URL to open in browser
+
+**You should see the simple Rent A Room react app in your browser.**
+
 
 If everything is set up correctly, the browser or curl command should return your frontend application.
 
