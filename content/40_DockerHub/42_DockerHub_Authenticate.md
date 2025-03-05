@@ -4,99 +4,70 @@ chapter: true
 weight: 42
 ---
 
-# Docker Hub CLI Authentication
+# 🔐 Docker Hub CLI Authentication
 
-## 🔐 CLI Login
+In this section, we will:
+- ✅ **Authenticate with Docker Hub** via CLI.
+- ✅ **Securely store credentials in AWS Secrets Manager** for use in **AWS CodePipeline**.
 
-1. Open your terminal
-2. Use the Docker login command:
+---
+
+## **1️⃣ Docker Hub Login via CLI**
+
+To push and pull images from Docker Hub, log in via CLI:
 
 ```bash
 docker login -u replace-with-your-username
 ```
 
-3. Enter the Personal Access Token as your password.
+🔹 **Use your Docker Personal Access Token** when prompted for a password.  
 
 ![Docker Login](/images/docker-cli-login.png)
 
-## 📦 Sample Application
+---
 
-Clone the Rent-A-Room application:
+## **2️⃣ Secure Credential Storage in AWS Secrets Manager**
+Instead of hardcoding credentials, we will **store them securely** in AWS Secrets Manager.
 
-```bash
-git clone https://github.com/aws-samples/Rent-A-Room.git
-cd Rent-A-Room
-```
-
-Create a Dockerfile in the root directory:
-
-```dockerfile
-cat << 'EOF' > Dockerfile
-# Build stage
-FROM node:16-alpine as build
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-# Production stage
-FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-EOF
-```
-
-## 🏷️ Building and Pushing
+### **🔹 Prompting for Docker Credentials**
+Run the following command to prompt the user for **Docker Hub credentials** and store them in variables:
 
 ```bash
-# REPLACE YOUR-DOCKER_USERNAME to set variable DOCKER_USERNAME
-DOCKER_USERNAME=YOUR-DOCKER_USERNAME
+read -p "Enter your Docker Hub username: " DOCKER_USERNAME
+read -s -p "Enter your Docker Hub access token: " DOCKER_TOKEN
+echo
 ```
+
+### **🔹 Storing Credentials in AWS Secrets Manager**
+Now, create a **secure AWS secret** using the entered credentials:
 
 ```bash
-# Confirm Docker username is properly set
-echo $DOCKER_USERNAME
+aws secretsmanager create-secret --name dockerhub-credentials \
+  --description "Docker Hub credentials for AWS CodePipeline" \
+  --secret-string "{\"DOCKER_USERNAME\":\"$DOCKER_USERNAME\", \"DOCKER_TOKEN\":\"$DOCKER_TOKEN\"}"
 ```
+
+✅ This command securely **stores `DOCKER_USERNAME` and `DOCKER_TOKEN`** in AWS Secrets Manager.
+
+---
+
+## **3️⃣ Verify Secret Creation**
+Run the following to confirm the secret exists:
 
 ```bash
-# Build the image
-docker build -t rent-a-room .
+aws secretsmanager list-secrets | grep dockerhub-credentials
 ```
+
+To view the stored values (for debugging purposes only):
 
 ```bash
-# Tag for Docker Hub
-docker tag rent-a-room $DOCKER_USERNAME/rent-a-room:v1.0
+aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query SecretString --output json
 ```
 
-```bash
-# Push to Docker Hub
-docker push $DOCKER_USERNAME/rent-a-room:v1.0
-```
+---
 
-![Push Progress](/images/push-progress.png)
-
-## ✅ Testing Your Image
-
-Pull and run your image locally:
-
-```bash
-docker run -d -p 3000:80 $DOCKER_USERNAME/rent-a-room:v1.0
-```
-
-Access the application at with this command in the Terminal:
-```bash
-echo "http://$(curl -s checkip.amazonaws.com):3000"
-```
-
-💡 **Pro Tip**:
-
-- Mac users: Press ⌘ + click on the URL to open in browser
-- Windows users: Press Ctrl + click on the URL to open in browser
-
-**You should see the simple Rent A Room react app in your browser.**
-
-## 🎯 Next Steps
-
-Next, we'll automate this process using AWS CodePipeline.
+## **4️⃣ Next Steps**
+Now that credentials are securely stored:
+1. **AWS CodePipeline will retrieve them during builds.**  
+2. **No need to manually enter Docker credentials again!**  
+3. **Move to the next section** to automate Docker builds in AWS CodePipeline. 🚀
