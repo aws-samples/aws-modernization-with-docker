@@ -206,9 +206,8 @@ Now, let’s walk through the **actual `pipeline.yml` file** step by step.
 ---
 
 ## **✅ Next Steps**
-1️⃣ **Run the AWS CLI commands** to store credentials securely.  
-2️⃣ **Generate the `buildspec.yml` and `pipeline.yml`** automatically.  
-3️⃣ **Manually edit `pipeline.yml`** in VS Code.  
-4️⃣ **In the next section (`Docker Hub`), we will push the built image.**  
+1️⃣ **Generate the `buildspec.yml` and `pipeline.yml`** automatically.  
+2️⃣ **Manually edit `pipeline.yml`** in VS Code.  
+3️⃣ **In the next section (`Docker Hub`), we will push the built image.**  
 
 🚀 Once this is done, you’ll have a fully automated **Docker Build Cloud CI/CD pipeline** set up in **AWS CodePipeline**.  
