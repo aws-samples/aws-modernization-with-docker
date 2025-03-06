@@ -282,6 +282,6 @@ version: 1
 ```bash
 aws codepipeline create-pipeline --cli-input-yaml file://pipeline.yml
 ```
-4️⃣ **In the next section (`Docker Hub`), we will push the built image.**  
+4️⃣ **In the next section (`Docker Hub`), we will push the built image to our DockerHub Repository.**  
 
-🚀 Once this is done, you'll have a fully automated **Docker Build Cloud CI/CD pipeline** set up in **AWS CodePipeline**.
+🚀 Once this is done, you'll be a few stages away from a full **Docker Build Cloud CI/CD pipeline** set up in **AWS CodePipeline**.
