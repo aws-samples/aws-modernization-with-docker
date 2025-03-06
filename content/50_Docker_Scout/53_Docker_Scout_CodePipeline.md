@@ -6,12 +6,12 @@ weight: 53
 
 # 🔄 Automating Docker Scout in AWS CodePipeline
 
-Now, let’s **integrate Docker Scout** into **AWS CodePipeline** to automate security scanning before pushing images.
+Now, let's **integrate Docker Scout** into our pipeline to automate security scanning before pushing images.
 
 ---
 
 ## **1️⃣ Update `buildspec.yml` to Add Docker Scout**
-We will **append** a new phase to **run a security scan** during the build.
+We will **append** a new phase to **run a security scan** during the build, which will analyze our images for vulnerabilities before pushing to Docker Hub.
 
 Run the following command to **add the scan step** before the `post_build` phase:
 
@@ -20,11 +20,11 @@ sed -i '/post_build:/i\
   security_scan:\
     commands:\
       - echo Running Docker Scout Security Scan...\
-      - docker scout cves $DOCKER_USERNAME/myapp:latest --format json > scout-report.json\
-      - CRITICAL_COUNT=$(jq '[.vulnerabilities[] | select(.severity=="critical")] | length' scout-report.json)\
+      - docker scout cves $DOCKER_USERNAME/rent-a-room:latest --format json > scout-report.json\
+      - CRITICAL_COUNT=$(jq '\''[.vulnerabilities[] | select(.severity=="critical")] | length'\'' scout-report.json)\
       - if [ "$CRITICAL_COUNT" -gt 0 ]; then\
           echo "❌ CRITICAL vulnerabilities found! Failing the build.";\
-          jq -r '".vulnerabilities[] | select(.severity==\"critical\") | \"CVE: \" + .id + \" | Package: \" + .package.name + \" | Suggested Fix: \" + (.fixes[].versions | join(\", \"))"' scout-report.json;\
+          jq -r '\''.vulnerabilities[] | select(.severity=="critical") | "CVE: " + .id + " | Package: " + .package.name + " | Suggested Fix: " + (.fixes[].versions | join(", "))'\'' scout-report.json;\
           exit 1;\
         fi\
 ' buildspec.yml
@@ -64,16 +64,16 @@ phases:
   build:
     commands:
       - echo Building Docker image using BuildKit...
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest --load .
 
   security_scan:
     commands:
       - echo Running Docker Scout Security Scan...
-      - docker scout cves $DOCKER_USERNAME/myapp:latest --format json > scout-report.json
+      - docker scout cves $DOCKER_USERNAME/rent-a-room:latest --format json > scout-report.json
       - CRITICAL_COUNT=$(jq '[.vulnerabilities[] | select(.severity=="critical")] | length' scout-report.json)
       - if [ "$CRITICAL_COUNT" -gt 0 ]; then
           echo "❌ CRITICAL vulnerabilities found! Failing the build.";
-          jq -r '".vulnerabilities[] | select(.severity=="critical") | "CVE: " + .id + " | Package: " + .package.name + " | Suggested Fix: " + (.fixes[].versions | join(", "))"' scout-report.json;
+          jq -r '.vulnerabilities[] | select(.severity=="critical") | "CVE: " + .id + " | Package: " + .package.name + " | Suggested Fix: " + (.fixes[].versions | join(", "))' scout-report.json;
           exit 1;
         fi
 
@@ -81,94 +81,106 @@ phases:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image to Docker Hub...
-      - docker push $DOCKER_USERNAME/myapp:latest
+      - docker push $DOCKER_USERNAME/rent-a-room:latest
 
 artifacts:
   files:
     - '**/*'
 ```
 
+The key features of our updated `buildspec.yml` are:
+
+1. **Pre-build phase**: Login to Docker Hub and set up BuildKit
+2. **Build phase**: Build multi-architecture Docker images
+3. **Security scan phase**: Run Docker Scout to analyze vulnerabilities and fail if critical issues are found
+4. **Post-build phase**: Push the image to Docker Hub only if security checks pass
+
 ---
 
-## **4️⃣ Fully Updated `pipeline.yml`**
-To fully integrate **Docker Scout** into **AWS CodePipeline**, update the pipeline configuration.
+## **4️⃣ Understanding the Security Pipeline**
 
-Run the following command to **update or create `pipeline.yml`**:
+The **security_scan** phase works as follows:
 
-```bash
-cat <<EOF > pipeline.yml
-AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  MyPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      Name: DockerCI-CD-Pipeline
-      RoleArn: arn:aws:iam::123456789012:role/CodePipelineRole
-      ArtifactStore:
-        Type: S3
-        Location: my-codepipeline-artifacts-bucket
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: GitHubSource
-              ActionTypeId:
-                Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
-                Version: "1"
-              Configuration:
-                Owner: "REPLACE_WITH_YOUR_GITHUB_USERNAME"
-                Repo: "REPLACE_WITH_YOUR_GITHUB_REPO"
-                Branch: "main"
-                OAuthToken: "{{resolve:secretsmanager:GitHub/Token}}"
-              OutputArtifacts:
-                - Name: SourceArtifact
+1. Runs `docker scout cves` on our image and saves the results as JSON
+2. Counts the number of critical vulnerabilities using `jq`
+3. If any critical vulnerabilities are found:
+   - Displays a failure message
+   - Lists all critical vulnerabilities with their IDs, affected packages, and suggested fixes
+   - Fails the build with exit code 1, preventing the image from being pushed
 
-        - Name: Build
-          Actions:
-            - Name: BuildDockerImage
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: "1"
-              Configuration:
-                ProjectName: docker-build-cloud-project
-              InputArtifacts:
-                - Name: SourceArtifact
-              OutputArtifacts:
-                - Name: BuildOutput
-EOF
+This creates a security gate ensuring only images that pass the vulnerability check make it to Docker Hub.
+
+---
+
+## **5️⃣ No Changes to Pipeline Configuration**
+
+Our pipeline configuration from the previous section already supports this workflow, as the CodeBuild project will automatically process our updated buildspec.yml. The full pipeline will continue with the same configuration:
+
+```yaml
+pipeline:
+  roleArn: arn:aws:iam::account-id:role/CodePipelineServiceRole
+  stages:
+    - name: Source
+      actions:
+        - name: GitHubSource
+          actionTypeId:
+            category: Source
+            owner: ThirdParty
+            provider: GitHub
+            version: '1'
+          configuration:
+            Owner: GitHubOwner
+            Repo: GitHubRepo
+            Branch: main
+            OAuthToken: '{{resolve:secretsmanager:GitHub/WorkshopOwnerToken:SecretString:OwnerToken}}'
+          outputArtifacts:
+            - name: SourceArtifact
+          runOrder: 1
+    
+    - name: Build
+      actions:
+        - name: BuildDockerImage
+          actionTypeId:
+            category: Build
+            owner: AWS
+            provider: CodeBuild
+            version: '1'
+          configuration:
+            ProjectName: docker-build-cloud-project
+          inputArtifacts:
+            - name: SourceArtifact
+          outputArtifacts:
+            - name: BuildOutput
+          runOrder: 1
+  
+  artifactStore:
+    type: S3
+    location: codepipeline-artifact-bucket
+  name: docker-build-cloud-pipeline
+  version: 1
 ```
-**Note: Replace `REPLACE_WITH_YOUR_GITHUB_USERNAME` and `REPLACE_WITH_YOUR_GITHUB_REPO` with your repsective values.**
 
 ---
 
-## **5️⃣ Explanation of What Was Added**
-This **security policy** ensures every build is **scanned for vulnerabilities** and fails if any critical ones are found.
+## **6️⃣ Benefits of This Security-Enhanced Pipeline**
 
-### **🔹 Key Enhancements**
-✅ **Docker Scout Scan (`security_scan` phase)**
-- **Extracts vulnerabilities** from the Docker Scout scan report.
-- **Fails the pipeline** if critical vulnerabilities exist.
-- **Provides suggested fixes** from the report.
-
-✅ **Updated CodePipeline Configuration**
-- **Ensures Docker Scout runs before pushing the image.**
-- **Maintains a fully automated security-first CI/CD pipeline.**
+✅ **Automated vulnerability scanning** before images are pushed  
+✅ **Fail-fast approach** to prevent vulnerable images from reaching production  
+✅ **Detailed vulnerability reports** to help developers fix security issues  
+✅ **Simple implementation** using existing Docker Scout capabilities  
+✅ **Security-first posture** with minimal pipeline configuration changes
 
 ---
 
-## **6️⃣ Next Steps**
+## **7️⃣ Next Steps**
 1️⃣ **Run the `sed` command** to update `buildspec.yml`.  
 2️⃣ **Verify with `cat buildspec.yml`**.  
-3️⃣ **Generate the new `pipeline.yml` file**.  
-4️⃣ **Commit and push the changes**:
+3️⃣ **Commit and push the changes**:
 
 ```bash
-git add buildspec.yml pipeline.yml
+git add buildspec.yml
 git commit -m "Added Docker Scout security scanning to CodePipeline"
 git push origin main
 ```
 
-Now, your AWS **CodePipeline will fail if critical vulnerabilities are found and provide suggested fixes**! 🚀
+Now, your AWS **CodePipeline will automatically scan for vulnerabilities and fail if critical issues are found** before pushing images to Docker Hub! 🚀
