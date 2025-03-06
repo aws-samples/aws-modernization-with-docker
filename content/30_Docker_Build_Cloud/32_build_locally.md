@@ -10,14 +10,14 @@ weight: 21
 
 ### ** Fork the Repository**
 
-Login to your GitHub account and fork the [GitHub Repo](https://github.com/aws-samples/Rent-A-Room/fork).
+Login to your GitHub account and [Click me to fork the GitHub Repo](https://github.com/aws-samples/Rent-A-Room/fork).
 
 ### **1. Clone the Repository**
 
 Once the fork had been created, click on the Green `Code` button and copy your repo's URL and update the `REPO_URL` variable with your Repo URL:
 
 ```sh
-REPO_URL=replae-me-with-your-repo-url.git
+REPO_URL=replace-me-with-your-repo-url.git
 ```
 
 ```sh
