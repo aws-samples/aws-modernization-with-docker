@@ -45,13 +45,13 @@ FROM nginx:1.24.0
 After updating the `Dockerfile`, rebuild the image:
 
 ```bash
-docker build -t $DOCKER_USERNAME/myapp:latest .
+docker build -t $DOCKER_USERNAME/rent-a-room:latest .
 ```
 
 Run another **Docker Scout scan** to confirm the issues are fixed:
 
 ```bash
-docker scout cves $DOCKER_USERNAME/myapp:latest
+docker scout cves $DOCKER_USERNAME/rent-a-room:latest
 ```
 
 ---
