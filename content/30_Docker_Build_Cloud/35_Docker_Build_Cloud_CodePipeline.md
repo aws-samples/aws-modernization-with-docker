@@ -9,42 +9,12 @@ weight: 35
 Now that we've set up **Docker Build Cloud**, let’s integrate it into a **CI/CD pipeline** using **AWS CodePipeline** and **AWS CodeBuild**.  
 
 This section will:  
-✅ Securely **store Docker credentials** in AWS Secrets Manager  
-✅ **Automate builds** using AWS CodeBuild  
+✅ **Automating builds** using AWS CodeBuild  
 ✅ **Set up AWS CodePipeline** to manage builds and deployments  
 
 ---
 
-## **1️⃣ Secure Credential Management with AWS Secrets Manager**
-Before setting up the pipeline, we need to **store Docker Hub credentials securely**.
-
-### **🔑 Store Docker Credentials**
-Run the following commands to **enter your Docker credentials** and store them securely in AWS Secrets Manager:
-
-```bash
-read -p "Enter your Docker Hub username: " DOCKER_USERNAME
-read -s -p "Enter your Docker Hub access token: " DOCKER_TOKEN
-echo
-
-aws secretsmanager create-secret --name dockerhub-credentials \
-  --description "Docker Hub credentials for CI/CD pipeline" \
-  --secret-string "{\"DOCKER_USERNAME\":\"$DOCKER_USERNAME\", \"DOCKER_TOKEN\":\"$DOCKER_TOKEN\"}"
-```
-
-✅ This command securely stores **DOCKER_USERNAME** and **DOCKER_TOKEN** in **AWS Secrets Manager**.  
-
----
-
-### **✅ Verify Secret Creation**
-Run the following to confirm the secret exists:
-
-```bash
-aws secretsmanager list-secrets --query "SecretList[?Name=='dockerhub-credentials']"
-```
-
----
-
-## **2️⃣ Understanding `buildspec.yml`**
+## **1️⃣ Understanding `buildspec.yml`**
 
 Run this command below to create your buildspec file.
 
@@ -157,7 +127,7 @@ artifacts:
 
 ---
 
-## **3️⃣ Understanding `pipeline.yml`**
+## **2️⃣ Understanding `pipeline.yml`**
 The **`pipeline.yml`** file is an **AWS CodePipeline configuration file** that automates the **CI/CD workflow**.
 
 ✅ **Defines pipeline stages** (Source, Build, Deploy)  
