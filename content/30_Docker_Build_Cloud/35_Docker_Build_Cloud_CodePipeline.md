@@ -276,12 +276,7 @@ version: 1
 ---
 
 ## **✅ Next Steps**
-1️⃣ **Generate the `buildspec.yml` and `pipeline.yml`** automatically.  
-2️⃣ **Manually edit `pipeline.yml`** in VS Code if needed.  
-3️⃣ **Use AWS CLI to create the pipeline:**
-```bash
-aws codepipeline create-pipeline --cli-input-yaml file://pipeline.yml
-```
-4️⃣ **In the next section (`Docker Hub`), we will push the built image to our DockerHub Repository.**  
+
+**In the next section (`Docker Hub`), we will push the built image to our DockerHub Repository.**  
 
 🚀 Once this is done, you'll be a few stages away from a full **Docker Build Cloud CI/CD pipeline** set up in **AWS CodePipeline**.
