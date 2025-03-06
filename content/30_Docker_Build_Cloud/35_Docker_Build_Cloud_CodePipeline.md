@@ -69,7 +69,7 @@ phases:
   build:
     commands:
       - echo Building Docker image using BuildKit...
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load .
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest --load .
 
 artifacts:
   files:
@@ -138,7 +138,7 @@ phases:
   build:
     commands:
       - echo Building Docker image using BuildKit...
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest --load
 ```
 🔹 **What’s happening?**  
 ✅ Uses **Docker Buildx** to create **multi-platform images**.  
