@@ -6,7 +6,7 @@ weight: 43
 
 # 🐳 Docker Hub Integration – CodePipeline Perspective
 
-Now that we’ve built our Docker images using **Docker Build Cloud**, we need to **push them to Docker Hub**. This section will:
+Now that we've built our Docker images using **Docker Build Cloud**, we need to **push them to Docker Hub**. This section will:
 - ✅ **Append a `post_build` phase** to `buildspec.yml` to **automate pushing images**.
 - ✅ **Provide a fully updated `buildspec.yml` file**.
 - ✅ **Show an updated `pipeline.yml` configuration** to integrate with AWS CodePipeline.
@@ -16,7 +16,7 @@ Now that we’ve built our Docker images using **Docker Build Cloud**, we need t
 ## **1️⃣ Updating `buildspec.yml` to Push to Docker Hub**
 
 In the previous section, **Docker Build Cloud** built the image but did **not push it**.  
-Now, we’ll **add a `post_build` phase** to push the image to Docker Hub.
+Now, we'll **add a `post_build` phase** to push the image to Docker Hub.
 
 ### **📌 Appending the `post_build` Phase**
 
@@ -28,7 +28,7 @@ sed -i '/artifacts:/i\
     commands:\
       - echo Build completed on `date`\
       - echo Pushing the Docker image to Docker Hub...\
-      - docker push $DOCKER_USERNAME/myapp:latest\
+      - docker push $DOCKER_USERNAME/rent-a-room:latest\
 ' buildspec.yml
 ```
 
@@ -66,13 +66,13 @@ phases:
   build:
     commands:
       - echo Building Docker image using BuildKit...
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/myapp:latest --load .
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest --load .
 
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image to Docker Hub...
-      - docker push $DOCKER_USERNAME/myapp:latest
+      - docker push $DOCKER_USERNAME/rent-a-room:latest
 
 artifacts:
   files:
@@ -88,47 +88,47 @@ Run the following command to **update or create `pipeline.yml`**:
 
 ```bash
 cat <<EOF > pipeline.yml
-AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  MyPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      Name: DockerCI-CD-Pipeline
-      RoleArn: arn:aws:iam::123456789012:role/CodePipelineRole
-      ArtifactStore:
-        Type: S3
-        Location: my-codepipeline-artifacts-bucket
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: GitHubSource
-              ActionTypeId:
-                Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
-                Version: "1"
-              Configuration:
-                Owner: "REPLACE_WITH_YOUR_GITHUB_USERNAME"
-                Repo: "REPLACE_WITH_YOUR_GITHUB_REPO"
-                Branch: "main"
-                OAuthToken: "{{resolve:secretsmanager:GitHub/Token}}"
-              OutputArtifacts:
-                - Name: SourceArtifact
-
-        - Name: Build
-          Actions:
-            - Name: BuildDockerImage
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: "1"
-              Configuration:
-                ProjectName: docker-build-cloud-project
-              InputArtifacts:
-                - Name: SourceArtifact
-              OutputArtifacts:
-                - Name: BuildOutput
+pipeline:
+  roleArn: arn:aws:iam::account-id:role/CodePipelineServiceRole
+  stages:
+    - name: Source
+      actions:
+        - name: GitHubSource
+          actionTypeId:
+            category: Source
+            owner: ThirdParty
+            provider: GitHub
+            version: '1'
+          configuration:
+            Owner: GitHubOwner
+            Repo: GitHubRepo
+            Branch: main
+            OAuthToken: '{{resolve:secretsmanager:GitHub/WorkshopOwnerToken:SecretString:OwnerToken}}'
+          outputArtifacts:
+            - name: SourceArtifact
+          runOrder: 1
+    
+    - name: Build
+      actions:
+        - name: BuildDockerImage
+          actionTypeId:
+            category: Build
+            owner: AWS
+            provider: CodeBuild
+            version: '1'
+          configuration:
+            ProjectName: docker-build-cloud-project
+          inputArtifacts:
+            - name: SourceArtifact
+          outputArtifacts:
+            - name: BuildOutput
+          runOrder: 1
+  
+  artifactStore:
+    type: S3
+    location: codepipeline-artifact-bucket
+  name: docker-build-cloud-pipeline
+  version: 1
 EOF
 ```
 
