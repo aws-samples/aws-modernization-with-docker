@@ -1,7 +1,7 @@
 ---
-title: "Step 3: Run Application Locally"
+title: "Step 2: Run Application Locally"
 chapter: false
-weight: 21
+weight: 33
 ---
 
 # Run the application locally
@@ -36,6 +36,7 @@ docker ps
 ### **Test the Application in a Browser**
 
 Access the application at with this command in the Terminal:
+
 ```bash
 echo "http://$(curl -s checkip.amazonaws.com):3000"
 ```
@@ -46,7 +47,6 @@ echo "http://$(curl -s checkip.amazonaws.com):3000"
 - Windows users: Press Ctrl + click on the URL to open in browser
 
 **You should see the simple Rent A Room react app in your browser.**
-
 
 If everything is set up correctly, the browser or curl command should return your frontend application.
 

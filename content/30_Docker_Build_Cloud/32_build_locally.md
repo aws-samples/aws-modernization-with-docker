@@ -1,7 +1,7 @@
 ---
-title: "Build Image Locally"
+title: "Step 1: Build Image Locally"
 chapter: false
-weight: 21
+weight: 32
 ---
 
 # **Building the Image Locally (`docker build`)**
@@ -56,7 +56,6 @@ EOF
 ```
 
 ---
-
 
 2. **Run the local build command:**
    Run the following to build the image:
