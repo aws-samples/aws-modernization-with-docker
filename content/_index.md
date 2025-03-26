@@ -25,6 +25,6 @@ Docker is an open platform for developing, shipping, and running applications. D
 - Developers 
 - DevOps Engineers
 - Solutions Architects
-- Site Reliability Engineers (SRE's)
+- Site Reliability Engineers (SRE's) 
 - Anyone that loves containers and wants to learn more!
 
