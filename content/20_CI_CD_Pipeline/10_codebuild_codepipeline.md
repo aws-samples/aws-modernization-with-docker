@@ -1,5 +1,5 @@
 +++
-title = "Step 2: Introducion to AWS CodeBuild and AWS CodePipeline"
+title = "Step 2: Creation of AWS CodePipeline"
 chapter = false
 weight = 21
 +++
@@ -13,7 +13,7 @@ aws cloudformation create-stack --stack-name docker-compose-code-pipeline --temp
 ```
 
 Once our CloudFormation is done deploying, we should see the following in the AWS console
-![Docker](/images/CFN.png)
+![CFN](/images/CFN.png)
 
 # AWS CodeBuild
 At the start of this section we defined the differences between CI and CD and how they can be used together to bring automation to your development lifecycle. AWS CodeBuild is considered the CI component for our pipeline. AWS CodeBuild is a fully managed continuous integration service that compiles source code, runs tests, and produces software packages that are ready to deploy. With CodeBuild, you don’t need to provision, manage, and scale your own build servers. CodeBuild scales continuously and processes multiple builds concurrently, so your builds are not left waiting in a queue. You can get started quickly by using prepackaged build environments, or you can create custom build environments that use your own build tools. With CodeBuild, you are charged by the minute for the compute resources you use.
@@ -157,5 +157,3 @@ phases:
       - echo "deploy successful"
 ```
 The deployspec.yaml file is similar to our buildspec.yaml file but the main difference here is that it takes the image that is pushed to Docker Hub and then deploys it to ECS as you can see under the build phase of the file. If you also remember from Module 2, once you set your Docker context to ECS we can simply run the docker compose up command and it will take all the resources defined in the docker-compose files and deploy our application to ECS along with creating other AWS resources that we have defined as well. 
-
-In the next section we will push a change to our source code to demonstrate the concepts covered in this section along with showing how CodePipeline orchestrates our deployment pipeline. 
