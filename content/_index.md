@@ -6,7 +6,7 @@ weight: 1
 
 # Application Modernization with AWS and Docker
 
-![Docker] (/images/docker-cloud-twitter-card.png)
+![Docker](/images/docker-cloud-twitter-card.png)
 
 ### Welcome!
 
