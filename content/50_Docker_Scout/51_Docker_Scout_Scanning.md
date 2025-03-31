@@ -44,7 +44,6 @@ docker scout cves $DOCKER_USERNAME/myapp:latest
 CVE-2023-XXXXX  |  High  |  nginx:1.21.6  |  Upgrade to nginx:1.24.0
 CVE-2023-YYYYY  |  Medium  |  node:16  |  Upgrade to node:18
 ```
-
 ---
 
 ## **3️⃣ Understanding the Output**
