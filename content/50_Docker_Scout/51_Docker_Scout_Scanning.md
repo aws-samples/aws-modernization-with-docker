@@ -29,21 +29,23 @@ curl -fsSL https://get.docker.com | sh
 We will scan the **Docker image we built and pushed** in the previous section:
 
 ```bash
-docker scout quickview $DOCKER_USERNAME/myapp:latest
+docker scout quickview $DOCKER_USERNAME/rent-a-room:latest
 ```
+![Summary](/images/Summaryscout.png)
 
 🔹 This will display a **summary of vulnerabilities** in the image.  
 🔹 To get a **detailed report**, run:
 
 ```bash
-docker scout cves $DOCKER_USERNAME/myapp:latest
+docker scout cves $DOCKER_USERNAME/rent-a-room:latest
 ```
 
 **Example Output:**
-```plaintext
-CVE-2023-XXXXX  |  High  |  nginx:1.21.6  |  Upgrade to nginx:1.24.0
-CVE-2023-YYYYY  |  Medium  |  node:16  |  Upgrade to node:18
-```
+
+![Scout](/images/Detailed-scout.png) 
+
+🔹 Each outcome is a link to Docker Scout, click to see more 
+
 
 ---
 

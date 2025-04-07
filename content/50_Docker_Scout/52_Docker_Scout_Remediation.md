@@ -11,7 +11,7 @@ Now that we have scanned our image with **Docker Scout**, let’s **fix** the id
 ---
 
 ## **1️⃣ Updating Our Dockerfile**
-Based on our **Docker Scout scan results**, we need to **update base images** to remove vulnerabilities.
+Based on our **Docker Scout scan results**, we need to **update base images** to remove vulnerabilities. Navigate to the Dockerfile to fix the vulnerabilities. 
 
 For example, if our **existing Dockerfile** is:
 
@@ -40,6 +40,7 @@ FROM nginx:1.24.0
 ```
 
 ---
+
 
 ## **2️⃣ Rebuild and Rescan**
 After updating the `Dockerfile`, rebuild the image:
