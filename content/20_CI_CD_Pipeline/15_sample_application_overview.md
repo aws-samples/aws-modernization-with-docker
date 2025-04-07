@@ -1,7 +1,7 @@
 +++
 title = "Step 1: Sample Application Overview"
 chapter = false
-weight = 21
+weight = 26
 +++
 ### Sample Application Overview
 The sample application that we will use for this module is a frontend web app built with React (frontend) and NGINX (webserver). You will build, containerize, and deploy the Rent-A-Room application to AWS

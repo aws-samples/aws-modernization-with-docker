@@ -1,6 +1,6 @@
 ---
-title: "Step 3: Build with Docker Build Cloud"
-chapter: false
+title: "Build with Docker Build Cloud"
+chapter: true
 weight: 34
 ---
 

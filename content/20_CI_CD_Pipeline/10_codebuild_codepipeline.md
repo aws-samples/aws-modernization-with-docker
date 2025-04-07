@@ -1,7 +1,7 @@
 +++
 title = "Step 2: Creation of AWS CodePipeline"
 chapter = false
-weight = 21
+weight = 25
 +++
 
 In this section we will set up our CI/CD pipline using AWS CodeBuild and AWS CodePipeline as our tools of choice. We will also use CloudFormation to deploy our pipeline. Let's go ahead and give a quick overview of both AWS CodePipeline and AWS CodeBuild to give us a better understanding of how both services play a part if building our pipeline. 

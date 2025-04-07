@@ -1,21 +1,35 @@
 +++
-title = "CI/CD Tools and Services"
+title = "AWS CI/CD Tools and Services"
 chapter = true
 weight = 21
 +++
 
-# Understanding CI/CD Tools and Services
+# Understanding AWS CI/CD Tools and Services
+
+### What is Git?
+Git is an open-source distributed source code management system. Git allows you to create a copy of your repository known as a branch. Using this branch, you can then work on your code independently from the stable version of your codebase. Once you are ready with your changes, you can store them as a set of differences, known as a commit. You can pull in commits from other contributors to your repository, push your commits to others, and merge your commits back into the main version of the repository.
+
+[Learn more about Git..](https://aws.amazon.com/devops/source-control/git/)
+
+
+
+### Source control basics
+Whether you are writing a simple application on your own or collaborating on a large software development project as part of a team, source control is a vital component of the development process. Source code management systems allow you to track your code change, see a revision history for your code, and revert to previous versions of a project when needed. With source code management systems, you can collaborate on code with your team, isolate your work until it is ready, and quickly trouble-shoot issues by identifying who made changes and what the changes were. Source code management systems help streamline the development process and provide a centralized source for all your code.
 
 
 Before we begin building our CI/CD pipeline, let's understand the core services and tools we'll be using throughout this workshop. Our pipeline will utilize a suite of AWS services and Docker tools that work together seamlessly to automate the software delivery process. By understanding each component's role, you'll gain insight into how modern software delivery pipelines are constructed and operated at scale.
 
 In this pipeline, we'll leverage AWS's powerful developer tools along with Docker's container ecosystem to create a robust automation workflow. From source code management through to production deployment, each tool plays a crucial part in ensuring our application is built, tested, and deployed reliably and efficiently. As we progress through this workshop, you'll see how these services interact with each other to form a comprehensive CI/CD solution that can handle everything from code commits to production deployments.
 
-Let's explore each of these services in detail to understand their specific roles and how they contribute to our automated pipeline:
+::alert[Note]{header="If you are familiar with the AWS CI/CD Tools please navigate to the Docker Intro section"}
 
+
+Let's explore each of these services in detail to understand their specific roles and how they contribute to our automated pipeline:
 
 ### AWS CodeConnections
 AWS CodeConnections is a feature in the Developer Tools console to connect AWS resources such as AWS CodePipeline to external code repositories. Each connection is a resource that you can give to AWS services to connect to a third-party repository, such as Git or BitBucket. You can use a connection ARN in your stack templates for CodeBuild build projects, CodeDeploy applications, and pipelines in CodePipeline, without the need to reference stored secrets or parameters.
+
+[Learn more about AWS CodeConnections..](https://docs.aws.amazon.com/dtconsole/latest/userguide/welcome-connections.html#welcome-connections-what-can-I-do)
 
 
 ### AWS CodeBuild
@@ -38,15 +52,3 @@ AWS CodeDeploy is a deployment service that automates application deployments to
 
 ### Amazon Elastic Container Registry (ECR)
 Amazon Elastic Container Registry (Amazon ECR) is an AWS managed container image registry service designed to store, manage, and deploy container images and artifacts. It provides a highly available and scalable infrastructure, eliminating the need for self-managed repositories. The service offers both private and public repositories, allowing organizations to host images securely or share them publicly. ECR seamlessly integrates with AWS services like IAM for access control, and container services such as ECS and EKS for streamlined deployments. Supporting both Docker and OCI images, ECR includes built-in vulnerability scanning to enhance security, making it a comprehensive solution for container image management.
-
-### Docker Build Cloud
-Docker Build Cloud is a service that lets you build your container images faster, both locally and in CI. Builds run on cloud infrastructure optimally dimensioned for your workloads, no configuration required. The service uses a remote build cache, ensuring fast builds anywhere and for all team members.
-
-### Docker Scout
-Docker Scout is a comprehensive security solution designed to address vulnerabilities in container images, which are composed of layers and software packages that can pose security risks to containers and applications. It enhances software supply chain security by analyzing images and creating a Software Bill of Materials (SBOM) - an inventory of all components. This SBOM is continuously checked against an updated vulnerability database to identify potential security weaknesses. Users can access Docker Scout through multiple interfaces, including Docker Desktop, Docker Hub, Docker CLI, and the Docker Scout Dashboard, while also leveraging its integration capabilities with third-party container registries and CI platforms.
-
-### Docker Hub
-Docker Hub is a robust container registry platform that streamlines development by providing extensive tools for storing, managing, and sharing Docker images. It offers developers access to pre-built images and assets to accelerate development workflows, while featuring seamless tool integration for enhanced productivity and reliable application deployment. The platform includes key features such as unlimited public repositories, private repositories, workflow automation through webhooks, integration with GitHub and Bitbucket, support for concurrent and automated builds, and a collection of trusted, secure content. This combination of features makes Docker Hub an essential resource for container-based development and deployment.
-
-### Testcontainers
-Testcontainers is a popular open source library designed to support integration testing by providing lightweight, disposable instances of common databases, web browsers, or any service that can run in a Docker container. It allows developers to write tests that interact with real instances of external resources, rather than relying on mocks or stubs.

@@ -1,7 +1,7 @@
 ---
-title: "Step 2: Run Application Locally"
+title: "Run Application Locally"
 chapter: false
-weight: 33
+weight: 34
 ---
 
 # Run the application locally

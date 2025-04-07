@@ -1,5 +1,5 @@
 +++
-title = "CICD Overview"
+title = "CI/CD Overview"
 chapter = true
 weight = 23
 +++
@@ -12,19 +12,19 @@ Continuous Integration/Continuous Delivery (CI/CD) can be pictured as a pipeline
 ![cicdpipeline](/images/cicdpipeline.png)
 
 
-### CICD pipeline overview
+### CI/CD pipeline overview
 Each stage of the CI/CD pipeline is structured as a logical unit in the delivery process. Each stage acts as a gate that vets a certain aspect of the code. As the code progresses through the pipeline, the assumption is that the quality of the code is higher in the later stages, because more aspects of it continue to be verified. Problems uncovered in an early stage stop the code from progressing through the pipeline. Results from the tests are immediately sent to the team, and all further builds and releases are stopped if software does not pass the stage.
 
 AWS brings in a complete set of CI/CD developer tools to accelerate software development and release cycles. AWS CodePipeline automates the build, test, and deploy phases of the release process every time there is a code change, based on the defined release model. This enables the rapid and reliable delivery of features and updates.
 AWS CodePipeline can address a variety of development and operation use cases including:
 
-    - Compiling, building, and testing code with AWS CodeBuild.
-    - Continuous delivery of container-based applications to the cloud.
-    - Pre-deployment validation of artifacts (such as descriptors and container images) 
+  - Compiling, building, and testing code with AWS CodeBuild.
+  - Continuous delivery of container-based applications to the cloud.
+  - Pre-deployment validation of artifacts (such as descriptors and container images) 
       required for network service or specific cloud-native network functions.
-    - Functional, integration, and performance tests, including baseline and 
+  - Functional, integration, and performance tests, including baseline and 
       regression testing.
-    - Reliability and disaster recovery (DR) testing.
+  - Reliability and disaster recovery (DR) testing.
 
 
 AWS CodePipeline can integrate with other services. These can be AWS services such as Amazon Simple Storage Service (Amazon S3), or third-party products such as GitHub, Docker BuildKit, Docker Scout and Docker Hub.
@@ -35,15 +35,15 @@ AWS CodePipeline can integrate with other services. These can be AWS services su
 ### AWS CI/CD pipeline components
 AWS can set up CI/CD pipelines using the following AWS developer tools:
 
-    - AWS CodeConnections (to use GitHub repository).
-    - AWS CodeBuild.
-    - AWS CodePipeline.
-    - AWS CodeDeploy.
-    - Amazon Elastic Container Registry.
-    - Docker Build Cloud
-    - Docker Scout
-    - Docker TestContainers
-    - Docker Hub
+ - AWS CodeConnections (to use GitHub repository).
+ - AWS CodeBuild.
+ - AWS CodePipeline.
+ - AWS CodeDeploy.
+ - Amazon Elastic Container Registry.
+ - Docker Build Cloud
+ - Docker Scout
+ - Docker TestContainers
+ - Docker Hub
 
 The creation of CI/CD pipelines using these services can be automated using AWS CDK and AWS CloudFormation.
  
