@@ -44,6 +44,8 @@ docker scout cves $DOCKER_USERNAME/rent-a-room:latest
 
 ![Scout](/images/Detailed-scout.png) 
 
+🔹 Each outcome is a link to Docker Scout, click to see more 
+
 
 ---
 
