@@ -42,7 +42,7 @@ docker scout cves $DOCKER_USERNAME/rent-a-room:latest
 
 **Example Output:**
 
-![Scout](/images/Detailed-scout.png) 
+![Scout](/images/Detailedscout.png)
 
 🔹 Each outcome is a link to Docker Scout, click to see more 
 
