@@ -4,7 +4,23 @@ chapter: true
 weight: 34
 ---
 
-## **Prerequisites(TODO: Add package caching story)**
+## **Docker Build Cloud: Overview**
+
+Docker Build Cloud is a powerful remote build service that accelerates container image creation by offloading build operations to Docker's cloud infrastructure.
+
+### **Subscription Requirements**
+
+Docker Build Cloud is available with:
+
+- **Docker Pro** (\$9/month)
+- **Docker Team** (\$15/user/month)
+- **Docker Business** (\$24/user/month)
+
+If you don't have a paid subscription, please use the [Docker Build Local](../35_Docker_Build_Local/) guide instead.
+
+For subscription details, visit [Docker Pricing](https://www.docker.com/pricing/).
+
+## **Prerequisites**
 
 - Install **Docker Desktop**: [Download here](https://www.docker.com/get-started/)
 - Ensure **Docker Desktop is running**
@@ -19,69 +35,204 @@ weight: 34
 
 ---
 
-## **Enabling Docker Build Cloud via CLI**
+### **Step 1: Clone the Project Repository**
 
-1. **Check if Docker Build Cloud is enabled:**
+First, clone the sample React application:
 
-   ```sh
-   docker buildx version
-   ```
+```bash
+git clone https://github.com/aws-samples/Rent-A-Room.git
+cd Rent-A-Room
+```
 
-   Ensure that it shows `buildx` support.
+### **Step 2: Create the Dockerfile**
 
-2. **Enable Build Cloud:**
+Run the following command to save the content in the **Dockerfile**:
 
-   ```sh
-   docker buildx create --name mybuilder --use
-   docker buildx inspect --bootstrap
-   ```
+```bash
+cat << 'EOF' > Dockerfile
+# Build stage
+FROM node:12 as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-3. **Build an image using Build Cloud:**
-   ```sh
-   docker buildx build --platform linux/amd64 --progress=plain -t my-app .
-   ```
+# Production stage
+FROM nginx:1.14
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+```
 
 ---
 
-## **Configuring Build Settings**
+#### **Want to understand more about the `Dockerfile`?**
 
-### **Optimizing Builds with Caching Mechanisms**
+This Dockerfile uses a multi-stage build process to create an optimized production image for a Node.js application served by Nginx. Let's break it down:
 
-Docker Build Cloud significantly improves build speed by utilizing **remote caching**. Instead of rebuilding unchanged layers, it retrieves them from the cloud, reducing redundant processing.
+##### Build Stage
 
-#### **Enable Remote Caching**
-
-To use remote caching, store cache layers in a registry:
-
-```sh
-docker buildx build --cache-to=type=registry,ref=myrepo/cache --cache-from=type=registry,ref=myrepo/cache -t my-app .
+```bash
+# Build stage
+FROM node:12 as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 ```
 
-### **Comparing Build Performance: Cloud vs. Local**
+- **FROM node:12 as build**: Starts with a Node.js 12 base image, naming this stage "build".
+- **WORKDIR /app**: Sets the working directory in the container.
+- **COPY package\*.json ./**: Copies package.json and package-lock.json (if present) to the working directory.
+- **RUN npm install**: Installs the Node.js dependencies.
+- **COPY . .**: Copies the rest of the application code into the container.
+- **RUN npm run build**: Builds the application (typically creating a build or dist folder).
 
-This is an example performance difference, your miledge might vary for your local machaine might be different.
-| **Scenario** | **Local Build (BuildKit)** | **Docker Build Cloud** |
-| --------------------- | -------------------------- | ---------------------- |
-| Image Transfer | ~0.8s | ~1.2s |
-| Node.js Metadata Load | ~0.7s | ~1.2s |
-| Build Context Load | ~0.0s | ~0.0s |
-| Base Image Pull | ~0.1s | ~0.2s |
-| Nginx Image Pull | ~0.8s | ~2.6s |
-| `npm install` | ~51.8s | ~50.4s |
-| `npm run build` | ~27.0s | ~25.8s |
-| Total Build Time | ~80s | ~76s |
+##### Build Stage
 
-#### **How Participants Can See the Efficiency Gain**
+```bash
+# Production stage
+FROM nginx:1.14
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
 
-1. **Run a local build:**
-   ```sh
-   time docker build -t rent-a-room .
-   ```
-2. **Run a cloud build with caching enabled:**
-   ```sh
-   time docker buildx build --cache-from=type=registry,ref=myrepo/cache --cache-to=type=registry,ref=myrepo/cache -t rent-a-room .
-   ```
-3. **Compare build times** and observe the efficiency of caching and parallel execution.
+**FROM nginx:1.14**: Starts a new stage using the Nginx 1.14 base image.
+**COPY --from=build /app/build /usr/share/nginx/html**: Copies the built files from the previous stage to Nginx's serving directory.
+**EXPOSE 80**: Informs Docker that the container will listen on port 80.
+**CMD ["nginx", "-g", "daemon off;"]**: Starts Nginx in the foreground when the container runs.
+
+---
+
+### **Step 3: Verify Docker Build Cloud Setup**
+
+Ensure Docker Build Cloud is properly configured:
+
+To verify buildx is available:
+
+```bash
+# Verify buildx is available
+docker buildx version
+```
+
+To create and configure builder instance:
+
+```bash
+docker buildx create --name cloud-builder --use
+```
+
+the above will output:
+
+```bash
+cloud-builder
+```
+
+Bootstrap the builder instance using this command:
+
+```bash
+docker buildx inspect --bootstrap
+```
+
+You should see output indicating your builder is using the Docker Build Cloud driver like this:
+
+```bash
++] Building 6.7s (1/1) FINISHED
+ => [internal] booting buildkit                                                                                                      6.7s
+ => => pulling image moby/buildkit:buildx-stable-1                                                                                   5.8s
+ => => creating container buildx_buildkit_cloud-builder0                                                                             0.9s
+Name:          cloud-builder
+Driver:        docker-container
+......
+```
+
+### **Step 4: Build Your Image with Docker Build Cloud**
+
+Build the image using Docker Build Cloud:
+
+```bash
+docker buildx build --load --platform linux/amd64 -t rent-a-room .
+```
+
+Key options explained:
+
+- **--load**: Imports the built image into your local Docker image store
+- **--platform**: Specifies the target platform architecture
+- **-t rent-a-room**: Tags the image with the name "rent-a-room"
+
+### **Step 5: Verify Your Image**
+
+Wait for step 4 to finish building, then check that your image was built successfully:
+
+```bash
+docker images | grep rent-a-room
+```
+
+If built successfully you will see output like this:
+
+```bash
+rent-a-room     latest            0b9c31de0251   3 seconds ago    111MB
+```
+
+### **Step 6: Run the Container**
+
+Start a container using the image you built:
+
+```bash
+docker run -d -p 3000:80 --name rent-a-room-container rent-a-room
+```
+
+### **Step 7: Test the Application**
+
+Access your application in a web browser at `http://localhost:3000`.
+You should see the Rent-A-Room application running.
+![Docker](/images/docker-frontend-built.png)
+
+### **Step 8: Explore Build Acceleration**
+
+Make a small change with the application like this:
+
+```bash
+# Make a small change to force a rebuild
+echo "// Small change" >> src/App.js
+```
+
+Then time the cloud build
+
+```bash
+# Run the cloud build and time the building
+time docker buildx build --load --platform linux/amd64 -t rent-a-room .
+```
+
+### **(Optional)Step 9: Advanced: Enable Remote Caching**
+
+For even faster builds, especially in CI/CD environments, you could try something like below:
+
+```bash
+# Replace USERNAME with your Docker Hub username
+docker buildx build \
+  --cache-to type=registry,ref=USERNAME/rent-a-room-cache \
+  --cache-from type=registry,ref=USERNAME/rent-a-room-cache \
+  --load --platform linux/amd64 \
+  -t rent-a-room .
+```
+
+### **Step 10: Stop and Remove the Application Container**
+
+To stop the running container:
+
+```sh
+docker stop rent-a-room-container
+```
+
+To remove the container:
+
+```sh
+docker rm rent-a-room-container
+```
 
 ---
 
@@ -92,4 +243,4 @@ This is an example performance difference, your miledge might vary for your loca
 - **Comparing cloud vs. local builds** demonstrates significant time savings.
 - **Ideal for large projects and CI/CD workflows**, ensuring faster deployments.
 
-In the next section, we will explore how to utilize **Docker Hub**.
+In the next section, we will explore how to utilize **Code Pipeline with Docker**.

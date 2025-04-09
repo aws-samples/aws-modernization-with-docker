@@ -4,32 +4,62 @@ chapter: true
 weight: 30
 ---
 
+# Getting Started
 
-# Getting Started 
-To start building with Docker, Click on "Docker Build Local" in the drop-down or "Docker Build Cloud" to continue.
+Want to skip the introduction? Choose your preferred Docker build method to continue:
 
-* ...[running the workshop with Docker Build Local](../35_Docker_Build_Local/), or
-* ...[running the workshop with Docker Build Cloud](../36_Docker_Build_Cloud/)
+- [Run the workshop with Docker Build Local](../35_Docker_Build_Local/)
+- [Run the workshop with Docker Build Cloud](../36_Docker_Build_Cloud/)
 
-#TODO Update why we should use either docker build vs docker build cloud
+## Docker Build vs Docker Build Cloud
 
-# **1. Build with Docker**
+Docker enables developers to efficiently build, ship, and run containerized applications. You have two main options for building container images:
 
-Docker enables developers to build, ship, and run applications in containers efficiently. Traditionally, `docker build` is used for building container images locally, while **Docker Build Cloud** is a managed, cloud-based build service that provides **faster** and **scalable** image builds.
+### Docker Build Cloud Benefits
 
-### **Why Use Docker Build Cloud?**
+- **Faster builds:** Leverages cloud-based caching and parallel processing
+- **Scalability:** Seamlessly handles large-scale build operations for CI/CD pipelines
+- **Resource efficiency:** Eliminates local hardware constraints by offloading build operations
+- **Build consistency:** Provides standardized, controlled build environments
 
-- **Faster builds:** Uses caching and parallel processing.
-- **Scalability:** Leverages remote build execution for CI/CD pipelines.
-- **Reduced local resource usage:** Offloads build operations to the cloud.
-- **Consistent builds:** Provides a controlled build environment.
+### Docker Build Local Benefits
 
-This guide provides **two approaches**:
+- **Internet independence:** Build without requiring external services or connectivity
+- **Zero cost:** No additional expenses beyond your local hardware resources
+- **Complete control:** Full autonomy over your build environment configuration
+- **Privacy:** Keep sensitive code and assets entirely on your infrastructure
 
-1. **Local Build (`docker build`)**
-2. **Cloud Build (`docker build cloud`)** (paid service)
+## Performance Comparison
 
-We will use the **[Rent-A-Room](https://github.com/aws-samples/Rent-A-Room)** repository as an example. This is a React-based project using `react-scripts` for building and running the frontend.
+Watch this side-by-side comparison between local and cloud builds:
 
+<video width="100%" controls>
+  <source src="build-cloudv-video-1080.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
-TODO 
+For detailed performance metrics and an ROI calculator, visit the [Docker Build Cloud product page](https://www.docker.com/products/build-cloud/). The calculator demonstrates potential savings with Docker Build Cloud (example below shows estimated savings for a team of 100 engineers):
+
+![Docker Build Cloud Savings](/images/docker-local-v-cloud-esitmated-saving.png)
+
+## Pricing Information
+
+Docker Build Cloud availability depends on your subscription tier:
+
+| Subscription Level | Price          | Build Minutes        |
+| ------------------ | -------------- | -------------------- |
+| Docker Personal    | Free           | Trial period only    |
+| Docker Pro         | $9/month       | Standard allocation  |
+| Docker Team        | $15/user/month | Increased allocation |
+| Docker Business    | $24/user/month | Maximum allocation   |
+
+For complete pricing details, visit the [Docker Pricing page](https://www.docker.com/pricing/).
+
+## Workshop Example Project
+
+This workshop uses the [Rent-A-Room](https://github.com/aws-samples/Rent-A-Room) repository as our example application. This is a React-based project using `react-scripts` for building and running the frontend.
+
+Ready to begin? Choose your path with either one choice below:
+
+- [Docker Build Local Workshop](../35_Docker_Build_Local/)
+- [Docker Build Cloud Workshop](../36_Docker_Build_Cloud/)

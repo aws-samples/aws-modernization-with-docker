@@ -31,14 +31,40 @@ You can verify the running container with:
 docker ps
 ```
 
+The above command will output something similar to this:
+
+```sh
+CONTAINER ID   IMAGE         COMMAND                  CREATED         STATUS         PORTS                  NAMES
+31b05c54f305   rent-a-room   "nginx -g 'daemon of…"   2 minutes ago   Up 2 minutes   0.0.0.0:3000->80/tcp   rent-a-room-container
+```
+
 ---
 
 ### **Test the Application in a Browser**
 
 Access the application at with this command in the Terminal:
 
+#### Option 1: Open in your browser
+
 ```bash
 echo "http://$(curl -s checkip.amazonaws.com):3000"
+```
+
+The above command will output something similar to this:
+
+```bash
+http://64.124.160.6:3000
+```
+
+Use this link to view the running frontend application.
+
+#### Option 2: Use localhost
+
+If you're running Docker on your local machine, you can also use:
+
+```bash
+http://localhost:3000
+
 ```
 
 💡 **Pro Tip**:
@@ -48,7 +74,8 @@ echo "http://$(curl -s checkip.amazonaws.com):3000"
 
 **You should see the simple Rent A Room react app in your browser.**
 
-If everything is set up correctly, the browser or curl command should return your frontend application.
+If everything is set up correctly, the browser or curl command should return your frontend application. In the browser of your choice you can see the `rent a room` frontend application like this:
+![Docker](/images/docker-frontend-built.png)
 
 ---
 
