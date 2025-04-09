@@ -4,9 +4,10 @@ chapter = true
 weight = 23
 +++
 
-# Docker Intro
+### Docker Intro
+Docker is an open platform that revolutionizes how we develop, ship, and run applications. By separating applications from infrastructure, Docker enables teams to deliver software quickly and efficiently. With Docker, organizations can manage their infrastructure using the same methodologies they use to manage their applications, breaking down traditional operational barriers.
 
-#TODO Give Docker Brief overview of the company or what docker solves....
+At its core, Docker provides the ability to package and run an application in a loosely isolated environment called a container. Think of containers as standardized shipping containers for software, they package everything an application needs to run, ensuring it works consistently anywhere, from a developer's laptop to a production server. By taking advantage of Docker's methodologies for shipping, testing, and deploying code, teams can significantly reduce the delay between writing code and running it in production.
 
 ---
 
