@@ -13,10 +13,12 @@ A container is a standard unit of software that packages up code and all its dep
 
 
 ## What is the difference between a virtual machine (VM) and a container?
-Containers and virtual machines have similar resource isolation and allocation benefits, but function differently because containers virtualize **the operating system instead of hardware**. Containers are more portable and efficient for this reason and too give us a better understanding of the differences between containers and virtual machines let's look at a comparison of the two. 
+Containers and virtual machines have similar resource isolation and allocation benefits, but function differently because containers virtualize **the operating system instead of hardware**. Containers are more portable and efficient for this reason and too give us a better understanding of the differences between containers and virtual machines let's look at a comparison of the two.
+
 
 ### Virtual Machines (VM's)
-Virtual machines (VMs) are an abstraction of physical hardware turning one server into many servers. The hypervisor allows multiple VMs to run on a single machine. Each VM includes a full copy of an operating system, the application, necessary binaries and libraries - taking up tens of GBs. VMs can also be slow to boot. The diagram below gives a visual representation of what running a virtual machine would look like. 
+Virtual machines (VMs) are an abstraction of physical hardware turning one server into many servers. The hypervisor allows multiple VMs to run on a single machine. Each VM includes a full copy of an operating system, the application, necessary binaries and libraries - taking up tens of GBs. VMs can also be slow to boot. The diagram below gives a visual representation of what running a virtual machine would look like.
+
 
 ![Docker](/images/container-vm-whatcontainer_2.png)
 

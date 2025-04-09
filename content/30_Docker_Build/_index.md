@@ -34,7 +34,7 @@ Docker enables developers to efficiently build, ship, and run containerized appl
 Watch this side-by-side comparison between local and cloud builds:
 
 <video width="100%" controls>
-  <source src="build-cloudv-video-1080.mp4" type="video/mp4">
+  <source src="/images/build-cloudv-video-1080.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
