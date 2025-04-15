@@ -63,6 +63,6 @@ This workshop uses the [Rent-A-Room](https://github.com/aws-samples/Rent-A-Room)
 
 Select which Docker build approach you'd like to use:
 
-- **[Continue with Docker Build Local](./36_Docker_Build_Local/)** - The traditional approach using your local machine resources (free, works offline)
+- **[Continue with Docker Build Local](../35_Docker_Build_Local/)** - The traditional approach using your local machine resources (free, works offline)
 - **[Switch to Docker Build Cloud](../36_Docker_Build_Cloud/)** - The cloud-based approach for faster builds (requires paid subscription or using free trial)
 

@@ -56,12 +56,12 @@ cat << 'EOF' > Dockerfile
 # Build stage
 FROM node:12 as build
 WORKDIR /app
+ENV DISABLE_ESLINT_PLUGIN=true
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build
 
-# Production stage
 FROM nginx:1.14
 COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
@@ -104,10 +104,10 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-**FROM nginx:1.14**: Starts a new stage using the Nginx 1.14 base image.
-**COPY --from=build /app/build /usr/share/nginx/html**: Copies the built files from the previous stage to Nginx's serving directory.
-**EXPOSE 80**: Informs Docker that the container will listen on port 80.
-**CMD ["nginx", "-g", "daemon off;"]**: Starts Nginx in the foreground when the container runs.
+- **FROM nginx:1.14**: Starts a new stage using the Nginx 1.14 base image.
+- **COPY --from=build /app/build /usr/share/nginx/html**: Copies the built files from the previous stage to Nginx's serving directory.
+- **EXPOSE 80**: Informs Docker that the container will listen on port 80.
+- **CMD ["nginx", "-g", "daemon off;"]**: Starts Nginx in the foreground when the container runs.
 
 ---
 
