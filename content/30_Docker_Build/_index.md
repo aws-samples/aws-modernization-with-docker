@@ -59,8 +59,10 @@ For complete pricing details, visit the [Docker Pricing page](https://www.docker
 
 This workshop uses the [Rent-A-Room](https://github.com/aws-samples/Rent-A-Room) repository as our example application. This is a React-based project using `react-scripts` for building and running the frontend.
 
-Ready to begin? Choose your path with either one choice below:
+## **Choose Your Build Method**
 
-- [Docker Build Local Workshop](../35_Docker_Build_Local/)
-- [Docker Build Cloud Workshop](../36_Docker_Build_Cloud/)
+Select which Docker build approach you'd like to use:
+
+- **[Continue with Docker Build Local](./36_Docker_Build_Local/)** - The traditional approach using your local machine resources (free, works offline)
+- **[Switch to Docker Build Cloud](../36_Docker_Build_Cloud/)** - The cloud-based approach for faster builds (requires paid subscription or using free trial)
 

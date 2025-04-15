@@ -1,0 +1,71 @@
+version: 2.0
+
+# BEGIN Locale
+defaultLocaleCode: en-US
+localeCodes:
+  - en-US
+# END Locale
+
+# A dictionary of arbitrary parameters that can be referenced in the workshop guide
+# using the params directive.
+params:
+  author: Patrick Vassell, JJ Lei, Joshua Amah, Abby Wilson, Omar Faruk
+  description: Docker & AWS - Modernization Workshop
+
+# List of links to display in the workshop guide. Will be rendered on the left hand side navigation menu.
+additionalLinks:
+  - title: "AWS Modernization with Docker"
+    link: "https://docker.awsworkshop.io/"
+  
+
+# START Infrastructure
+infrastructure:
+  cloudformationTemplates:
+    - templateLocation: static/infrastructure/vscode-server.yaml
+      label: Docker Workshop Vscode Server
+      participantVisibleStackOutputs:
+        - VSCODEURL
+        - Password
+    
+
+      #parameters:
+      
+      #- templateParameter: AssetZipS3Path
+        #defaultValue: '{{.AssetsBucketName}}/{{.AssetsBucketPrefix}}workshop.zip'
+
+# END Infrastructure
+
+# START Accounts
+awsAccountConfig:
+  accountSources:
+    - workshop_studio
+  serviceLinkedRoles:
+    - appsync.amazonaws.com
+  participantRole:
+    iamPolicies: 
+      - static/iam_policy.json
+    managedPolicies:
+      - "arn:aws:iam::aws:policy/IAMReadOnlyAccess"
+      - "arn:aws:iam::aws:policy/AdministratorAccess"
+    trustedPrincipals:
+      service:
+        - ec2.amazonaws.com
+        - codebuild.amazonaws.com
+        - lambda.amazonaws.com
+  regionConfiguration:
+    minAccessibleRegions: 1
+    maxAccessibleRegions: 3
+    accessibleRegions:
+      recommended:
+        - us-west-2
+        - us-east-1
+        - us-east-2
+    deployableRegions:
+      recommended:
+        - us-west-2
+        - us-east-1
+        - us-east-2
+
+        
+      
+# END Accounts

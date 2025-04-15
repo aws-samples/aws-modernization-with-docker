@@ -20,11 +20,5 @@ Docker Build Local is the traditional method of building container images direct
 
 This workshop uses the [Rent-A-Room](https://github.com/aws-samples/Rent-A-Room) repository as our example application. This is a React-based project using `react-scripts` for building and running the frontend.
 
-## **Choose Your Build Method**
-
-Select which Docker build approach you'd like to use:
-
-- **[Continue with Docker Build Local](./36_Docker_Build_Local/)** - The traditional approach using your local machine resources (free, works offline)
-- **[Switch to Docker Build Cloud](../36_Docker_Build_Cloud/)** - The cloud-based approach for faster builds (requires paid subscription or using free trial)
 
 The next section will guide you through the Docker Build Local workflow.
