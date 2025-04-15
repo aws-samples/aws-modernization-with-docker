@@ -12,7 +12,7 @@ Your account must have the ability to have Administrative Access
 
 To set up the required resources for this workshop, you will need to deploy this CloudFormation template:  
 
-Download the :button[vscode-server]{href="https://github.com/aws-samples/aws-modernization-with-docker/blob/main/static/infrastructure/vscode-server.yaml" action=download} CloudFormation Template
+Download the :button[vscode-server]{href="https://raw.githubusercontent.com/aws-samples/aws-modernization-with-docker/refs/heads/main/static/infrastructure/vscode-server.yaml" action=download} CloudFormation Template
 
 ---
 
