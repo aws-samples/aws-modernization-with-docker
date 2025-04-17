@@ -64,6 +64,7 @@ RUN npm run build
 
 FROM nginx:1.14
 COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 EOF
@@ -81,6 +82,7 @@ This Dockerfile uses a multi-stage build process to create an optimized producti
 # Build stage
 FROM node:12 as build
 WORKDIR /app
+ENV DISABLE_ESLINT_PLUGIN=true
 COPY package*.json ./
 RUN npm install
 COPY . .
@@ -109,7 +111,58 @@ CMD ["nginx", "-g", "daemon off;"]
 - **EXPOSE 80**: Informs Docker that the container will listen on port 80.
 - **CMD ["nginx", "-g", "daemon off;"]**: Starts Nginx in the foreground when the container runs.
 
+##### Create the nginx.conf file
+
+Create the Nginx configuration file with the following command:
+
+```bash
+cat << 'EOF' > nginx.conf
+server {
+    listen 80;
+    server_name localhost;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Support for SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Serve static files
+    location /static/ {
+        expires 1y;
+        add_header Cache-Control "public";
+    }
+
+    # Handle all API requests
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+```
+
+##### Update Configuration Files
+
+Run the following commands to update both package.json and App.js:
+
+```bash
+# Update package.json to add homepage
+sed -i '/"private": true,/a\  "homepage": ".",' package.json
+
+# Update App.js to add basename to Router
+sed -i 's/<Router>/<Router basename="\/proxy\/3000">/' src/App.js
+```
+
 ---
+
 
 ### 4. Build the Docker Image
 
@@ -129,7 +182,7 @@ Then wait for the build to be completed.
 docker images
 ```
 
-You willl be able to see the built image if the build was successful, the `docker images` will have output similar to this:
+You will be able to see the built image if the build was successful, the `docker images` will have output similar to this:
 
 ```sh
 REPOSITORY  TAG      IMAGE ID       CREATED          SIZE

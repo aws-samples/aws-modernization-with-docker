@@ -685,6 +685,10 @@ Resources:
                 - echo "Docker installed. Checking configuration"
                 - docker --version
                 - systemctl status docker.service
+                # Install Docker Scout
+                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+                - sh install-scout.sh
+                - docker scout --version
           - action: aws:runShellScript
             name: InstallDockerApt
             precondition:
@@ -703,6 +707,10 @@ Resources:
                 - echo "Docker installed. Checking configuration"
                 - docker --version
                 - systemctl status docker.service
+                # Install Docker Scout
+                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+                - sh install-scout.sh
+                - docker scout --version
           - action: aws:runShellScript
             name: InstallGitDnf
             precondition:
@@ -1190,6 +1198,11 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourcePrefixListId: !FindInMap [AWSRegions2PrefixListID, !Ref 'AWS::Region', PrefixList]
+        - Description: Allow access to port 3000 from anywhere
+          IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
 
   VSCodeHealthCheckLambdaRole:
     Type: AWS::IAM::Role
