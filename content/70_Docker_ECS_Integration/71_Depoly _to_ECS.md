@@ -119,6 +119,13 @@ In this section, we will:
 ### Using AWS CLI:
 
 ```bash
+
+# Create the ECS service-linked role
+aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
+
+# Wait for 10 seconds to ensure the role propagates
+sleep 10
+
 aws ecs create-cluster --cluster-name rent-a-room-cluster
 ```
 
@@ -147,22 +154,29 @@ aws ecs create-cluster --cluster-name rent-a-room-cluster
 ### Using AWS CLI:
 
 Save this as `task-definition.json`:
-```json
+```bash
+cat << EOF > task-definition.json
 {
     "family": "rent-a-room-task",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
     "cpu": "256",
     "memory": "512",
+    "runtimePlatform": {
+        "cpuArchitecture": "ARM64",
+        "operatingSystemFamily": "LINUX"
+    },
     "containerDefinitions": [{
         "name": "rent-a-room",
-        "image": "YOUR_DOCKERHUB_USERNAME/rent-a-room:latest",
+        "image": "${DOCKER_USERNAME}/rent-a-room:latest",
         "portMappings": [{
             "containerPort": 80,
+            "hostPort": 80,
             "protocol": "tcp"
         }]
     }]
 }
+EOF
 ```
 
 Then run:
@@ -241,27 +255,60 @@ aws ecs create-service \
 ### Using AWS CLI:
 
 ```bash
-# Get the task ARN
+# Wait for service to be stable
+echo "Waiting for ECS service to be stable..."
+aws ecs wait services-stable \
+    --cluster rent-a-room-cluster \
+    --services rent-a-room-service
+
+# Get the task ARN (with verification)
+echo "Getting task information..."
 TASK_ARN=$(aws ecs list-tasks \
     --cluster rent-a-room-cluster \
     --service-name rent-a-room-service \
     --query 'taskArns[0]' \
     --output text)
 
+if [ "$TASK_ARN" == "None" ] || [ -z "$TASK_ARN" ]; then
+    echo "No tasks found. Waiting for tasks to start..."
+    sleep 30  # Wait for tasks to start
+    TASK_ARN=$(aws ecs list-tasks \
+        --cluster rent-a-room-cluster \
+        --service-name rent-a-room-service \
+        --query 'taskArns[0]' \
+        --output text)
+fi
+
+echo "Task ARN: $TASK_ARN"
+
+# Wait for task to be running
+echo "Waiting for task to be running..."
+aws ecs wait tasks-running \
+    --cluster rent-a-room-cluster \
+    --tasks $TASK_ARN
+
 # Get the ENI ID attached to the task
+echo "Getting network interface ID..."
 ENI_ID=$(aws ecs describe-tasks \
     --cluster rent-a-room-cluster \
     --tasks $TASK_ARN \
     --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' \
     --output text)
 
-# Get the public IP
-PUBLIC_IP=$(aws ec2 describe-network-interfaces \
-    --network-interface-ids $ENI_ID \
-    --query 'NetworkInterfaces[0].Association.PublicIp' \
-    --output text)
+echo "ENI ID: $ENI_ID"
 
-echo "Your application is available at: http://$PUBLIC_IP"
+# Get the public IP
+if [ ! -z "$ENI_ID" ]; then
+    echo "Getting public IP..."
+    PUBLIC_IP=$(aws ec2 describe-network-interfaces \
+        --network-interface-ids $ENI_ID \
+        --query 'NetworkInterfaces[0].Association.PublicIp' \
+        --output text)
+    
+    echo "Your application is available at: http://$PUBLIC_IP:80"
+else
+    echo "Could not get network interface ID. Task might still be starting."
+fi
 ```
 
 ## **🔍 Monitoring**

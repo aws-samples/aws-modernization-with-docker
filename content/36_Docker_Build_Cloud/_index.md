@@ -35,12 +35,36 @@ For subscription details, visit [Docker Pricing](https://www.docker.com/pricing/
 
 ---
 
-### **Step 1: Clone the Project Repository**
+### **1. GitHub Authentication**
 
-First, clone the sample React application:
+Authenticate with GitHub using the pre-installed GitHub CLI:
 
-```bash
-git clone https://github.com/aws-samples/Rent-A-Room.git
+```sh
+# Login to GitHub
+gh auth login
+```
+
+You will be guided through several prompts:
+
+1. Select **GitHub.com**
+2. Select **HTTPS** as your preferred protocol
+3. When asked "Authenticate Git with your GitHub credentials?": Enter **Y**
+4. Select **Login with a web browser**
+5. Copy the one-time code shown in your terminal
+6. Press Enter to open the browser
+7. Paste the code in GitHub and authorize access
+
+![Github Cli Auth](/images/gh-auth.png)
+
+### **2.  Fork and Clone the Repository**
+
+Instead of cloning directly, we'll fork the repository first:
+
+```sh
+# Fork and clone the repository
+gh repo fork aws-samples/Rent-A-Room --clone=true
+
+# Change to the repository directory
 cd Rent-A-Room
 ```
 

@@ -20,7 +20,8 @@ docker scout version
 If it’s not installed, update Docker to the latest version or manually install it:
 
 ```bash
-curl -fsSL https://get.docker.com | sh
+curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+sh install-scout.sh
 ```
 
 ---

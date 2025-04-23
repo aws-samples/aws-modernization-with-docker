@@ -14,13 +14,23 @@ In this section, we will:
 
 ## **1️⃣ Docker Hub Login via CLI**
 
+### **🔹 Prompting for Docker Credentials**
+Run the following command to prompt the user for **Docker Hub credentials** and store them in variables:
+
+```bash
+echo '
+# Docker Hub Credentials
+export DOCKER_USERNAME="'$(read -p "Enter Docker Hub username: " username; echo $username)'"
+export DOCKER_TOKEN="'$(read -s -p "Enter Docker Hub token: " token; echo $token)'"' >> ~/.bashrc
+
+source ~/.bashrc
+```
+
 To push and pull images from Docker Hub, log in via CLI:
 
 ```bash
-docker login -u replace-with-your-username
+docker login -u $DOCKER_USERNAME -p $DOCKER_TOKEN
 ```
-
-🔹 **Use your Docker Personal Access Token** when prompted for a password.  
 
 ![Docker Login](/images/docker-cli-login.png)
 
@@ -29,17 +39,7 @@ docker login -u replace-with-your-username
 ## **2️⃣ Secure Credential Storage in AWS Secrets Manager**
 Instead of hardcoding credentials, we will **store them securely** in AWS Secrets Manager.
 
-### **🔹 Prompting for Docker Credentials**
-Run the following command to prompt the user for **Docker Hub credentials** and store them in variables:
-
-```bash
-read -p "Enter your Docker Hub username: " DOCKER_USERNAME
-read -s -p "Enter your Docker Hub access token: " DOCKER_TOKEN
-echo
-```
-
-### **🔹 Storing Credentials in AWS Secrets Manager**
-Now, create a **secure AWS secret** using the entered credentials:
+Create a **secure AWS secret** using the entered credentials:
 
 ```bash
 aws secretsmanager create-secret --name dockerhub-credentials \

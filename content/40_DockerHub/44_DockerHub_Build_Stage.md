@@ -1,7 +1,7 @@
 ---
-title: "Docker Hub Integration"
+title: "Docker Hub Code-Pipeline Integration"
 chapter: false
-weight: 43
+weight: 44
 ---
 
 # 🐳 Docker Hub Integration – CodePipeline Perspective
@@ -35,7 +35,7 @@ sed -i '/artifacts:/i\
 ---
 
 ## **2️⃣ Verify the Changes**
-Once the command runs, check the updated `buildspec.yml`:
+Once the command runs, check the updated `buildspec.yml`: d
 
 ```bash
 cat buildspec.yml

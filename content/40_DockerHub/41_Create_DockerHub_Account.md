@@ -34,7 +34,7 @@ Docker Hub is a cloud-based registry service that allows you to:
 
 For secure CLI access:
 
-1. Log into Docker Hub
+1. [Log into Docker Hub](https://login.docker.com/u/login)
 2. Click your username in top right
 
 ![Docker Settings](/images/dockerhub-settings.png)

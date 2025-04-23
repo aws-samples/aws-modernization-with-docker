@@ -1,34 +1,33 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Create a VSCode code-server instance with an Amazon CloudFront distribution for use in Workshop Studio
+Description: Create a VS code-server instance with an Amazon CloudFront distribution for use in Workshop Studio. Version 4.1.0
 
 Parameters:
   VSCodeUser:
     Type: String
-    Description: UserName for VSCode Server
+    Description: UserName for VS code-server
     Default: participant
   InstanceName:
     Type: String
-    Description: VSCode Server EC2 instance name
+    Description: VS code-server EC2 instance name
     Default: VSCodeServer
   InstanceVolumeSize:
     Type: Number
-    Description: VSCode Server EC2 instance volume size in GB
+    Description: VS code-server EC2 instance volume size in GB
     Default: 40
   InstanceType:
-    Description: VSCode Server EC2 instance type
+    Description: VS code-server EC2 instance type
     Type: String
     Default: t4g.medium
     AllowedPattern: '^(t3|t4|c6|c7|m6|m7|m8)[g|i|a]?(d|n|dn|-flex)?\.(nano|micro|small|medium|large|[2|4|9|12|16|18|24|32|48]?xlarge)$'
     ConstraintDescription: Must be a valid t, c or m series EC2 instance type
   InstanceOperatingSystem:
-    Description: VSCode Server EC2 operating system
+    Description: VS code-server EC2 operating system
     Type: String
     Default: AmazonLinux-2023
     AllowedValues: ['AmazonLinux-2023', 'Ubuntu-22', 'Ubuntu-24']
   HomeFolder:
     Type: String
     Description: Folder to open in VS Code server
-    Default: /Workshop
+    Default: /workshop
   DevServerBasePath:
     Type: String
     Description: Base path for the application to be added to Nginx sites-available list
@@ -37,6 +36,10 @@ Parameters:
     Type: Number
     Description: Port for the DevServer
     Default: 8081
+  RepoUrl:
+    Description: Remote repo URL to clone. To not clone a remote repo, leave blank
+    Type: String
+    Default: ''
   AssetZipS3Path:
     Description: S3 path holding the asset zip file to be copied into the home folder. To not include any assets, leave blank
     Type: String
@@ -49,7 +52,6 @@ Parameters:
     Description: S3 path holding the folder zip file, with each folder being a subfolder of the home directory. Each folder will have its own local git repo. To not include any folders, leave blank
     Type: String
     Default: ''
-
 
 Conditions:
   IsAL2023: !Equals [!Ref InstanceOperatingSystem, 'AmazonLinux-2023']
@@ -80,14 +82,15 @@ Metadata:
         Parameters:
           - VSCodeUser
           - HomeFolder
-          - AssetZipS3Path
           - DevServerBasePath
           - DevServerPort
+          - RepoUrl
+          - AssetZipS3Path
           - BranchZipS3Path
           - FolderZipS3Path
     ParameterLabels:
       VSCodeUser:
-        default: VSCode user name
+        default: VS code-server user name
       InstanceName:
         default: Instance name
       InstanceVolumeSize:
@@ -97,11 +100,13 @@ Metadata:
       InstanceOperatingSystem:
         default: Instance operating system
       HomeFolder:
-        default: VSCode home folder
+        default: VS code-server home folder
       DevServerBasePath:
         default: Application base path
       DevServerPort:
         default: Application port
+      RepoUrl:
+        default: Git repo URL
       AssetZipS3Path:
         default: Asset file S3 path
       BranchZipS3Path:
@@ -126,7 +131,7 @@ Mappings:
       ImageId: '{{resolve:ssm:/aws/service/canonical/ubuntu/server/noble/stable/current/amd64/hvm/ebs-gp3/ami-id}}'
     AmazonLinux-2023:
       ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}'
-  AWSRegions2PrefixListID:
+  AWSRegionsPrefixListID:
   # aws ec2 describe-managed-prefix-lists  --region <REGION> | jq -r '.PrefixLists[] | select (.PrefixListName == "com.amazonaws.global.cloudfront.origin-facing") | .PrefixListId'
     ap-northeast-1:
       PrefixList: pl-58a04531
@@ -162,19 +167,34 @@ Mappings:
       PrefixList: pl-82a045eb
 
 Resources:
+  VSCodeSecret:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W77
+            reason: The default KMS Key used by Secrets Manager is appropriate for this password which will be used to log into VSCodeServer, which has very limited permissions. In addition this secret will not be required to be shared across accounts
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Name: !Ref InstanceName
+      Description: VS code-server user details
+      GenerateSecretString:
+        PasswordLength: 16
+        SecretStringTemplate: !Sub '{"username":"${VSCodeUser}"}'
+        GenerateStringKey: 'password'
+        ExcludePunctuation: true
+
   SecretPlaintextLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - !Sub lambda.${AWS::URLSuffix}
-          Action:
-          - sts:AssumeRole
-      Path: /
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.${AWS::URLSuffix}
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
@@ -201,7 +221,7 @@ Resources:
     Properties:
       Description: Return the value of the secret
       Handler: index.lambda_handler
-      Runtime: python3.12
+      Runtime: python3.13
       MemorySize: 128
       Timeout: 10
       Architectures:
@@ -218,196 +238,43 @@ Resources:
           logger.setLevel(logging.INFO)
 
           def is_valid_json(json_string):
-            logger.debug('Calling is_valid_jason: %s', json_string)
-            try:
-              json.loads(json_string)
-              logger.info('Secret is in json format')
-              return True
-            except json.JSONDecodeError:
-              logger.info('Secret is in string format')
-              return False
-          def lambda_handler(event, context):
-            try:
-              if event['RequestType'] == 'Delete':
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
-              else:
-                secret_name = (event['ResourceProperties']['SecretArn'])
-                secrets_mgr = boto3.client('secretsmanager')
-                secret = secrets_mgr.get_secret_value(SecretId = secret_name)
-                logger.info('Getting secret from %s', secret_name)
-                secret_value = secret['SecretString']
-                logger.debug('secret_value: %s', secret_value)
-                responseData = {}
-                if is_valid_json(secret_value):
-                  responseData = secret_value
-                else:
-                  responseData = {'secret': secret_value}
-                logger.debug('responseData: %s', responseData)
-                logger.debug('type(responseData): %s', type(responseData))
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData=json.loads(responseData), reason='OK', noEcho=True)
-            except Exception as e:
-                logger.error(e)
-                cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
-
-  RunVSCodeSSMDoc:
-    Type: Custom::RunSSMDocLambda
-    Properties:
-      ServiceToken: !GetAtt RunSSMDocLambda.Arn
-      ServiceTimeout: 305
-      InstanceId: !Ref VSCodeInstance
-      DocumentName: !Ref VSCodeSSMDoc
-      CloudWatchLogGroupName: !Sub /aws/ssm/${VSCodeSSMDoc}
-      VSCodePassword: !GetAtt SecretPlaintext.password
-      LinuxFlavor: !If [IsAL2023, 'al2023', 'ubuntu']
-
-  RunSSMDocLambdaRole:
-    Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W11
-            reason: The Amazon EC2 ec2:Describe* API actions do not support resource-level permissions, so you cannot control which individual resources users can view in the console. Therefore, the * wildcard is necessary in the Resource element. See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-policies-ec2-console.html
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: RunSSMDocOnEC2
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ssm:SendCommand
-                Resource:
-                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/${VSCodeSSMDoc}
-                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/AmazonCloudWatch-ManageAgent
-                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${VSCodeInstance}
-
-  RunSSMDocLambda:
-    Type: AWS::Lambda::Function
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W58
-            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
-          - id: W89
-            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
-          - id: W92
-            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
-    Properties:
-      Description: Run SSM document on EC2 instance
-      Handler: index.lambda_handler
-      Runtime: python3.12
-      MemorySize: 128
-      Timeout: 300
-      Architectures:
-        - arm64
-      Role: !GetAtt RunSSMDocLambdaRole.Arn
-      Code:
-        ZipFile: |
-          import boto3
-          import cfnresponse
-          import logging
-          import time
-
-          logger = logging.getLogger()
-          logger.setLevel(logging.INFO)
-
-          SLEEP_MS = 2900
-
-          ssm = boto3.client('ssm')
+              logger.debug(f'Calling is_valid_jason:{json_string}')
+              try:
+                  json.loads(json_string)
+                  logger.info(f'Secret is in json format')
+                  return True
+              except json.JSONDecodeError:
+                  logger.info(f'Secret is in string format')
+                  return False
 
           def lambda_handler(event, context):
-              logger.debug('event: %s', event)
+              logger.debug(f'event: {event}')
+              logger.debug(f'context: {context}')
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
+                  else:
+                      resource_properties = event['ResourceProperties']
+                      secret_name = resource_properties['SecretArn']
+                      secrets_mgr = boto3.client('secretsmanager')
 
-              if event['RequestType'] != 'Create':
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
-              else:
-                  resource_properties = (event['ResourceProperties'])
-                  logger.debug('resource_properties: %s', resource_properties)
+                      logger.info(f'Getting secret from {secret_name}')
 
-                  instance_id = (event['ResourceProperties']['InstanceId'])
-                  document_name = (event['ResourceProperties']['DocumentName'])
-                  cloudwatch_log_group_name = (event['ResourceProperties']['CloudWatchLogGroupName'])
+                      secret = secrets_mgr.get_secret_value(SecretId = secret_name)
+                      logger.debug(f'secret: {secret}')
+                      secret_value = secret['SecretString']
 
-                  del resource_properties['ServiceToken']
-                  if 'ServiceTimeout' in resource_properties:
-                      del resource_properties['ServiceTimeout']
-                  del resource_properties['InstanceId']
-                  del resource_properties['DocumentName']
-                  del resource_properties['CloudWatchLogGroupName']
-                  if 'PhysicalResourceId' in resource_properties:
-                      del resource_properties['PhysicalResourceId']
-
-                  logger.debug(f'resource_properties filtered: {resource_properties}')
-
-                  parameters = {}
-                  for key, value in resource_properties.items():
-                      parameters[key] = [value]
-
-                  logger.debug(f'parameters: {parameters}')
-
-                  retry = True
-                  attempt_no = 0
-                  time_remaining = context.get_remaining_time_in_millis()
-                  logger.info(f'Running SSM Document {document_name} on EC2 instance {instance_id}. Logging to {cloudwatch_log_group_name}')
-
-                  while (retry == True):
-                      attempt_no += 1
-                      logger.info(f'Attempt: {attempt_no}. Time Remaining: {time_remaining/1000}s')
-                      try:
-                          response = ssm.send_command(
-                              InstanceIds = [instance_id],
-                              DocumentName = document_name,
-                              CloudWatchOutputConfig = {'CloudWatchLogGroupName': cloudwatch_log_group_name, 'CloudWatchOutputEnabled': True},
-                              Parameters = parameters
-                          )
-                          logger.debug(f'response: {response}')
-                          command_id = response['Command']['CommandId']
-                          responseData = {'CommandId': command_id}
-                          cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, reason='OK')
-                          retry = False
-
-                      except ssm.exceptions.InvalidInstanceId:
-                          time_remaining = context.get_remaining_time_in_millis()
-                          if (time_remaining > SLEEP_MS):
-                              logger.info(f'Instance {instance_id} not ready: {e}. Sleeping: {SLEEP_MS/1000}s')
-                              time.sleep(SLEEP_MS/1000)
-                              retry = True
-                          else:
-                              logger.info(f'Instance {instance_id} not ready: {e}. Timed out')
-                              cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
-                              retry = False
-
-                      except Exception as e:
-                          logger.error(e)
-                          cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
-                          retry = False
-
-  VSCodeSecret:
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W77
-            reason: The default KMS Key used by Secrets Manager is appropriate for this password which will be used to log into VSCodeServer, which has very limited permissions. In addition this secret will not be required to be shared across accounts
-    Type: AWS::SecretsManager::Secret
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Name: !Ref InstanceName
-      Description: VSCode user details
-      GenerateSecretString:
-        PasswordLength: 16
-        SecretStringTemplate: !Sub '{"username":"${VSCodeUser}"}'
-        GenerateStringKey: 'password'
-        ExcludePunctuation: true
+                      responseData = {}
+                      if is_valid_json(secret_value):
+                          responseData = secret_value
+                      else:
+                          responseData = {'secret': secret_value}
+                      logger.debug(f'responseData: {responseData}')
+                      logger.debug(f'type(responseData): {type(responseData)}')
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData=json.loads(responseData), reason='OK', noEcho=True)
+              except Exception as e:
+                  logger.error(e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
 
   SecretPlaintext:
     Type: Custom::SecretPlaintextLambda
@@ -422,7 +289,7 @@ Resources:
       DocumentType: Command
       Content:
         schemaVersion: '2.2'
-        description: Bootstrap VSCode code-server instance
+        description: Bootstrap VS code-server instance
         parameters:
           LinuxFlavor:
             type: String
@@ -430,28 +297,15 @@ Resources:
           VSCodePassword:
             type: String
             default: !Ref AWS::StackId
-          NodeVersion:
-            type: String
-            default: '20'
-            allowedValues:
-              - '22'
-              - '20'
-              - '18'
-          DotNetVersion:
-            type: String
-            default: '8.0'
-            allowedValues:
-              - '8.0'
-              - '7.0'
         # all mainSteps scripts are in in /var/lib/amazon/ssm/<instanceid>/document/orchestration/<uuid>/<StepName>/_script.sh
         mainSteps:
-          - action: aws:configurePackage
-            name: InstallCloudWatchAgent
+          - name: InstallCloudWatchAgent
+            action: aws:configurePackage
             inputs:
               name: AmazonCloudWatchAgent
               action: Install
-          - action: aws:runDocument
-            name: ConfigureCloudWatchAgent
+          - name: ConfigureCloudWatchAgent
+            action: aws:runDocument
             inputs:
               documentType: SSMDocument
               documentPath: AmazonCloudWatch-ManageAgent
@@ -460,15 +314,17 @@ Resources:
                 mode: ec2
                 optionalConfigurationSource: default
                 optionalRestart: 'yes'
-          - action: aws:runShellScript
-            name: InstallAptPackagesApt
+          - name: InstallAptPackagesApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
+                - dpkg --configure -a
                 - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q apt-utils
                 - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q needrestart unattended-upgrades
                 - sed -i 's/#$nrconf{kernelhints} = -1;/$nrconf{kernelhints} = 0;/' /etc/needrestart/needrestart.conf
@@ -476,33 +332,37 @@ Resources:
                 - sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
                 - echo "Apt helper packages added. Checking configuration"
                 - cat /etc/needrestart/needrestart.conf
-          - action: aws:runShellScript
-            name: InstallBasePackagesDnf
+          - name: InstallBasePackagesDnf
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - al2023
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - dnf install -y --allowerasing whois argon2 unzip nginx curl gnupg openssl
-          - action: aws:runShellScript
-            name: InstallBasePackagesApt
+                - dnf install -y --allowerasing curl gnupg whois argon2 unzip nginx openssl
+          - name: InstallBasePackagesApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q curl gnupg whois argon2 openssl locales locales-all unzip apt-transport-https ca-certificates software-properties-common nginx
-          - action: aws:runShellScript
-            name: AddUserDnf
+                - dpkg --configure -a
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q curl gnupg whois argon2 unzip nginx openssl locales locales-all apt-transport-https ca-certificates software-properties-common
+          - name: AddUserDnf
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - al2023
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
                 - !Sub |
@@ -513,15 +373,17 @@ Resources:
                   usermod -aG wheel ${VSCodeUser}
                 - echo "User added. Checking configuration"
                 - !Sub getent passwd ${VSCodeUser}
-          - action: aws:runShellScript
-            name: AddUserApt
+          - name: AddUserApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
+                - dpkg --configure -a
                 - !Sub |
                   if [[ "${VSCodeUser}" == "ubuntu" ]]
                   then
@@ -537,53 +399,228 @@ Resources:
                   ${VSCodeUser} ALL=(ALL) NOPASSWD:ALL
                   EOF
                 - !Sub mkdir -p /home/${VSCodeUser} && chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - !Sub mkdir -p /home/${VSCodeUser}/.local/bin && chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
                 - echo "User added. Checking configuration"
                 - !Sub getent passwd ${VSCodeUser}
-          - action: aws:runShellScript
-            name: InstallNodeDnf
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - al2023
+          - name: UpdateProfile
+            action: aws:runShellScript
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - dnf install -y nodejs npm
-                - npm install -g npm@latest
-                - echo "Node and npm installed. Checking configuration"
-                - node -v
-                - npm -v
-          - action: aws:runShellScript
-            name: InstallNodeApt
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - ubuntu
+                - echo LANG=en_US.utf-8 >> /etc/environment
+                - echo LC_ALL=en_US.UTF-8 >> /etc/environment
+                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.local/bin' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export PATH' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export AWS_REGION=${AWS::Region}' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export AWS_ACCOUNTID=${AWS::AccountId}' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export NEXT_TELEMETRY_DISABLED=1' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo "export PS1='\[\033[01;32m\]\u:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> /home/${VSCodeUser}/.bashrc
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+          - name: InstallAWSCLI
+            action: aws:runShellScript
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                # - curl -fsSL https://deb.nodesource.com/setup_20.x | sh
-                - curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg
-                - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_{{ NodeVersion }}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q nodejs
-                - npm install -g npm@latest
-                - echo "Node and npm installed. Checking configuration"
-                - node -v
-                - npm -v
-          - action: aws:runShellScript
-            name: InstallAWSCLI
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
+                - mkdir -p /tmp
                 - curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip -o /tmp/aws-cli.zip
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/aws-cli.zip
                 - unzip -q -d /tmp /tmp/aws-cli.zip
                 - sudo /tmp/aws/install
                 - rm -rf /tmp/aws
                 - echo "AWS CLI installed. Checking configuration"
                 - aws --version
-          - action: aws:runShellScript
-            name: ConfigureCodeServer
+          - name: InstallGitDnf
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
             inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dnf install -y git
+                - !Sub sudo -u ${VSCodeUser} git config --global user.email "participant@example.com"
+                - !Sub sudo -u ${VSCodeUser} git config --global user.name "Workshop Participant"
+                - !Sub sudo -u ${VSCodeUser} git config --global init.defaultBranch "main"
+                - echo "Git installed. Checking configuration"
+                - git --version
+                - !Sub |
+                  if [[ "${RepoUrl}" =~ ^codecommit ]];
+                  then
+                    dnf install -y python3-pip
+                    echo "Installing git-remote-codecommit with pip3"
+                    PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install git-remote-codecommit
+                  fi
+          - name: InstallGitApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dpkg --configure -a
+                - add-apt-repository ppa:git-core/ppa
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q git
+                - !Sub sudo -u ${VSCodeUser} git config --global user.email "participant@example.com"
+                - !Sub sudo -u ${VSCodeUser} git config --global user.name "Workshop Participant"
+                - !Sub sudo -u ${VSCodeUser} git config --global init.defaultBranch "main"
+                - echo "Git installed. Checking configuration"
+                - git --version
+                - !Sub |
+                  if [[ "${RepoUrl}" =~ ^codecommit ]];
+                  then
+                    apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q python3-pip
+                    echo "Installing git-remote-codecommit with pip3"
+                    PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install git-remote-codecommit
+                  fi
+          - name: CloneRepo
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 600
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub |
+                  if [[ -z "${RepoUrl}" ]]
+                  then
+                    echo "No Repo"
+                  else
+                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                    RepoUrlRegion=$(echo "${RepoUrl}" | sed "s/{.Region}/${AWS::Region}/g")
+                    sudo -u ${VSCodeUser} git clone $RepoUrlRegion ${HomeFolder}
+                    echo "Repo $(RepoUrlRegion) cloned. Checking configuration"
+                    ls -la ${HomeFolder}
+                    sudo -u ${VSCodeUser} git -C ${HomeFolder} remote -v
+                  fi
+          - name: DownloadAssets
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 600
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub |
+                  if [[ -z "${AssetZipS3Path}" ]]
+                  then
+                    echo "No assets"
+                  else
+                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                    mkdir -p /tmp
+                    aws s3 cp s3://${AssetZipS3Path} /tmp/asset.zip
+                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/asset.zip
+                    unzip -o /tmp/asset.zip -d ${HomeFolder}
+                    chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                    if  [[ -d ${HomeFolder}/.git ]] # Indicates that a repo has been cloned
+                    then
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} add .
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} commit -m 'Workshop commit'
+                    else
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} init
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} add .
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} commit -m 'Initial commit'
+                    fi
+                    echo "Assets downloaded. Checking configuration: ${HomeFolder}"
+                    ls -la ${HomeFolder}
+                    sudo -u ${VSCodeUser} git -C ${HomeFolder} branch
+                  fi
+          - name: DownloadFolders
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 600
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub |
+                  if [[ -z "${FolderZipS3Path}" ]]
+                  then
+                    echo "No folders"
+                  else
+                    rm -rf /tmp/folder
+                    mkdir -p /tmp/folder && chown -R ${VSCodeUser}:${VSCodeUser} /tmp/folder
+                    aws s3 cp s3://${FolderZipS3Path} /tmp/asset-folder.zip
+                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/asset-folder.zip
+                    unzip -o /tmp/asset-folder.zip -d /tmp/folder
+                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/folder
+                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                    cd "${HomeFolder}" && cd ..
+                    if [[ $(pwd) ==  "/" ]]
+                    then
+                      targetRootFolder=""
+                    else
+                      targetRootFolder=$(pwd)
+                      chown -R ${VSCodeUser}:${VSCodeUser} .
+                    fi
+                    find "/tmp/folder" -maxdepth 1 -mindepth 1 -type d | while read sourceFolder; do
+                      folder="$(basename $sourceFolder)"
+                      echo "Processing folder: $folder"
+                      targetFolder=$targetRootFolder/$folder
+                      if [[ $targetRootFolder == "" ]]
+                      then
+                        mv $sourceFolder /
+                      else
+                        mv $sourceFolder $targetRootFolder
+                      fi
+                      chown -R ${VSCodeUser}:${VSCodeUser} $targetFolder
+                      sudo -u ${VSCodeUser} git -C $targetFolder init
+                      sudo -u ${VSCodeUser} git -C $targetFolder add .
+                      sudo -u ${VSCodeUser} git -C $targetFolder commit -m "Initial commit"
+                      echo "Folder downloaded. Checking configuration: $targetFolder"
+                      ls -la $targetFolder
+                    done
+                    rm -rf /tmp/folder
+                  fi
+          - name: DownloadBranches
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 600
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub |
+                  if [[ -z "${BranchZipS3Path}" ]]
+                  then
+                    echo "No branches"
+                  else
+                    rm -rf /tmp/branch
+                    rm -rf /tmp/git
+                    mkdir -p /tmp/branch && chown -R ${VSCodeUser}:${VSCodeUser} /tmp/branch
+                    mkdir -p /tmp/git && chown -R ${VSCodeUser}:${VSCodeUser} /tmp/git
+                    aws s3 cp s3://${BranchZipS3Path} /tmp/asset-branch.zip
+                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/asset-branch.zip
+                    unzip -o /tmp/asset-branch.zip -d /tmp/branch
+                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/branch
+                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                    sudo -u ${VSCodeUser} git -C ${HomeFolder} init
+                    mv ${HomeFolder}/.git /tmp/git
+                    rm -rf ${HomeFolder}
+                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                    mv /tmp/git/.git ${HomeFolder}
+                    find /tmp/branch -maxdepth 1 -mindepth 1 -type d | while read sourceFolder; do
+                      branch="$(basename $sourceFolder)"
+                      echo "Processing branch: $branch"
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} checkout -b $branch 2>&1
+                      cp -a $sourceFolder/. ${HomeFolder}
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} add .
+                      sudo -u ${VSCodeUser} git -C ${HomeFolder} commit -m "Initial commit $branch"
+                      mv ${HomeFolder}/.git /tmp/git
+                      rm -rf ${HomeFolder}
+                      mkdir ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                      mv /tmp/git/.git ${HomeFolder}
+                    done
+                    sudo -u ${VSCodeUser} git -C ${HomeFolder} checkout main 2>&1
+                    sudo -u ${VSCodeUser} git -C ${HomeFolder} restore .
+                    rm -rf /tmp/branch
+                    rm -rf /tmp/git
+                    echo "Branches downloaded. Checking configuration: $HomeFolder"
+                    sudo -u ${VSCodeUser} git -C ${HomeFolder} branch
+                    ls -la ${HomeFolder}
+                  fi
+          - name: ConfigureCodeServer
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 600
               runCommand:
                 - '#!/bin/bash'
                 - !Sub export HOME=/home/${VSCodeUser}
@@ -632,7 +669,6 @@ Resources:
                     "security.workspace.trust.enabled": false,
                     "security.workspace.trust.banner": "never",
                     "security.workspace.trust.emptyWindow": false,
-                    "python.testing.pytestEnabled": true,
                     "auto-run-command.rules": [
                       {
                         "command": "workbench.action.terminal.new"
@@ -644,10 +680,9 @@ Resources:
                 - !Sub systemctl restart code-server@${VSCodeUser}
                 - systemctl restart nginx
                 - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension AmazonWebServices.aws-toolkit-vscode --force
-                #- !Sub sudo -u ${VSCodeUser} --login code-server --install-extension AmazonWebServices.amazon-q-vscode --force
-                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension synedra.auto-run-command --force
-                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension vscjava.vscode-java-pack --force
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension AmazonWebServices.amazon-q-vscode --force
                 - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension ms-vscode.live-server --force
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension synedra.auto-run-command --force
                 - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
                 - echo "Nginx installed. Checking configuration"
                 - nginx -t 2>&1
@@ -655,100 +690,69 @@ Resources:
                 - echo "CodeServer installed. Checking configuration"
                 - code-server -v
                 - !Sub systemctl status code-server@${VSCodeUser}
-          - action: aws:runShellScript
-            name: UpdateProfile
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - echo LANG=en_US.utf-8 >> /etc/environment
-                - echo LC_ALL=en_US.UTF-8 >> /etc/environment
-                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.local/bin' >> /home/${VSCodeUser}/.bashrc
-                - !Sub echo 'export PATH' >> /home/${VSCodeUser}/.bashrc
-                - !Sub echo 'export AWS_REGION=${AWS::Region}' >> /home/${VSCodeUser}/.bashrc
-                - !Sub echo 'export AWS_ACCOUNTID=${AWS::AccountId}' >> /home/${VSCodeUser}/.bashrc
-                - !Sub echo 'export NEXT_TELEMETRY_DISABLED=1' >> /home/${VSCodeUser}/.bashrc
-                - !Sub echo "export PS1='\[\033[01;32m\]\u:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> /home/${VSCodeUser}/.bashrc
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
-          - action: aws:runShellScript
-            name: InstallDockerDnf
+# Install optional packages here - any of these blocks can be deleted if that software is not required for the workshop
+          - name: InstallNodeDnf
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - al2023
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - dnf install -y docker
-                - !Sub usermod -aG docker ${VSCodeUser}
-                - !Sub systemctl restart code-server@${VSCodeUser}.service
-                - systemctl start docker.service
-                - echo "Docker installed. Checking configuration"
-                - docker --version
-                - systemctl status docker.service
-                # Install Docker Scout
-                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
-                - sh install-scout.sh
-                - docker scout --version
-          - action: aws:runShellScript
-            name: InstallDockerApt
+                - dnf install -y nodejs npm
+                - echo "Node and npm installed. Checking configuration"
+                - node -v
+                - npm -v
+          - name: InstallNodeApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                # - curl -fsSL https://get.docker.com | bash
-                - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-                - echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release --codename --short) stable" > /etc/apt/sources.list.d/docker.list
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io
-                - !Sub systemctl restart code-server@${VSCodeUser}.service
-                - systemctl start docker.service
-                - echo "Docker installed. Checking configuration"
-                - docker --version
-                - systemctl status docker.service
-                # Install Docker Scout
-                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
-                - sh install-scout.sh
-                - docker scout --version
-          - action: aws:runShellScript
-            name: InstallGitDnf
+                - curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg
+                - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q nodejs
+                - npm install -g npm@latest
+                - echo "Node and npm installed. Checking configuration"
+                - node -v
+                - npm -v
+          - name: InstallCDK
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - npm install -g aws-cdk
+                - echo "AWS CDK installed. Checking configuration"
+                - cdk --version
+          - name: InstallQCommandLine
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - curl --proto '=https' --tlsv1.2 -sSf "https://desktop-release.codewhisperer.us-east-1.amazonaws.com/latest/q-$(uname -m)-linux.zip" -o /tmp/q.zip
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/q.zip
+                - unzip -q -d /tmp /tmp/q.zip
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /tmp/q
+                - chmod +x /tmp/q/install.sh
+                - !Sub sudo -u ${VSCodeUser} /tmp/q/install.sh --no-confirm
+                - rm -rf /tmp/q
+                - echo "Amazon Q Command line installed"
+          - name: InstallPythonDnf
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - al2023
             inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - dnf install -y git
-                - !Sub sudo -u ${VSCodeUser} git config --global user.email "participant@example.com"
-                - !Sub sudo -u ${VSCodeUser} git config --global user.name "Workshop Participant"
-                - !Sub sudo -u ${VSCodeUser} git config --global init.defaultBranch "main"
-                - echo "Git installed. Checking configuration"
-                - git --version
-          - action: aws:runShellScript
-            name: InstallGitApt
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - ubuntu
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - add-apt-repository ppa:git-core/ppa
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q git
-                - !Sub sudo -u ${VSCodeUser} git config --global user.email "participant@example.com"
-                - !Sub sudo -u ${VSCodeUser} git config --global user.name "Workshop Participant"
-                - !Sub sudo -u ${VSCodeUser} git config --global init.defaultBranch "main"
-                - echo "Git installed. Checking configuration"
-                - git --version
-          - action: aws:runShellScript
-            name: InstallPythonDnf
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - al2023
-            inputs:
+              timeoutSeconds: 300
               runCommand:
                 # AL2023 currently ships with Python 3.9 preinstalled, but 3.11 is available in the repository
                 # Install 3.11 alongside 3.9 and setup some alias so that 3.11 is loaded when participant runs Python3
@@ -761,129 +765,79 @@ Resources:
                 - echo 'alias=python3=python3.11' >> ~/.bashrc
                 - echo 'alias pip3=pip3.11' >> ~/.bashrc
                 - python3.11 -m pip install --upgrade pip 2>&1
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension ms-python.python --force
+                - !Sub |
+                    if [ -f /home/${VSCodeUser}/.local/share/code-server/User/settings.json ]; then
+                      sed -i "2i\\  \"python.testing.pytestEnabled\": true," /home/${VSCodeUser}/.local/share/code-server/User/settings.json
+                    else
+                      echo '{
+                        "python.testing.pytestEnabled": true
+                      }' > /home/${VSCodeUser}/.local/share/code-server/User/settings.json
+                    fi
                 - echo "Python and Pip installed. Checking configuration"
                 - python3.11 --version
                 - python3.11 -m pip --version 2>&1
-
-          - action: aws:runShellScript
-            name: InstallPythonApt
+          - name: InstallPythonApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 # Ubuntu 22 default is Python 3.10
                 # Ubuntu 24 default is Python 3.12
                 # The default installed Python version will map to Python3
                 - '#!/bin/bash'
+                - dpkg --configure -a
                 - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q python3-pip python3-venv python3-boto3 python3-pytest
                 - !Sub echo 'alias pytest=pytest-3' >> /home/${VSCodeUser}/.bashrc
-                - !Sub systemctl restart code-server@${VSCodeUser}.service
                 - systemctl start multipathd.service packagekit.service
                 - systemctl restart unattended-upgrades.service
+                - systemctl restart networkd-dispatcher.service
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension ms-python.python --force
+                - !Sub |
+                    if [ -f /home/${VSCodeUser}/.local/share/code-server/User/settings.json ]; then
+                      sed -i "2i\\  \"python.testing.pytestEnabled\": true," /home/${VSCodeUser}/.local/share/code-server/User/settings.json
+                    else
+                      echo '{
+                        "python.testing.pytestEnabled": true
+                      }' > /home/${VSCodeUser}/.local/share/code-server/User/settings.json
+                    fi
                 - echo "Python and Pip installed. Checking configuration"
                 - python3 --version
                 - pip3 --version
-          - action: aws:runShellScript
-            name: InstallCDK
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - npm install -g aws-cdk
-                - echo "AWS CDK installed. Checking configuration"
-                - cdk --version
-          - action: aws:runShellScript
-            name: InstallGoDnf
+          - name: InstallJavaDnf
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - al2023
             inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - dnf install -y golang
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
-                - echo "Go installed. Checking configuration"
-                - go version
-          - action: aws:runShellScript
-            name: InstallGoApt
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - ubuntu
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - add-apt-repository ppa:longsleep/golang-backports
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q golang-go
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
-                - echo "Go installed. Checking configuration"
-                - go version
-          - action: aws:runShellScript
-            name: InstallDotnetDnf
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - al2023
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - dnf install -y dotnet-sdk-{{ DotNetVersion }}
-                - sudo dotnet tool install -g Microsoft.Web.LibraryManager.Cli
-                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.dotnet/tools' >> /home/${VSCodeUser}/.bashrc
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
-                - echo "Dotnet installed. Checking configuration"
-                - dotnet --list-sdks
-          - action: aws:runShellScript
-            name: InstallDotnetApt
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - ubuntu
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q dotnet-sdk-{{ DotNetVersion }}
-                - sudo dotnet tool install -g Microsoft.Web.LibraryManager.Cli
-                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.dotnet/tools' >> /home/${VSCodeUser}/.bashrc
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
-                - echo "Dotnet installed. Checking configuration"
-                - dotnet --list-sdks
-          - action: aws:runShellScript
-            name: InstallVite
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - npm install -g create-vite
-                - echo "Vite installed. Checking configuration"
-                - create-vite -h
-          - action: aws:runShellScript
-            name: InstallJavaDnf
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - al2023
-            inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
                 - dnf install -y java-21-amazon-corretto java-17-amazon-corretto java-1.8.0-amazon-corretto maven
                 - !Sub echo 'export JAVA_1_8_HOME=$(dirname $(dirname $(readlink -f $(which java))))' >> /home/${VSCodeUser}/.bashrc
                 - !Sub echo 'export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))' >> /home/${VSCodeUser}/.bashrc
                 - !Sub echo 'export PATH=$PATH:$JAVA_HOME/bin:/usr/share/maven/bin' >> /home/${VSCodeUser}/.bashrc
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension vscjava.vscode-java-pack --force
                 - echo "Java and Maven installed. Checking configuration"
                 - java -version 2>&1
                 - mvn --version
                 - update-alternatives --display java
-          - action: aws:runShellScript
-            name: InstallJavaApt
+          - name: InstallJavaApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
+                - dpkg --configure -a
                 - curl -fsSL https://apt.corretto.aws/corretto.key | gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg
                 - echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" > /etc/apt/sources.list.d/corretto.list
                 - DEBIAN_FRONTEND=noninteractive apt-get update
@@ -891,159 +845,380 @@ Resources:
                 - !Sub echo 'export JAVA_1_8_HOME=$(dirname $(dirname $(readlink -f $(which java))))' >> /home/${VSCodeUser}/.bashrc
                 - !Sub echo 'export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))' >> /home/${VSCodeUser}/.bashrc
                 - !Sub echo 'export PATH=$PATH:$JAVA_HOME/bin:/usr/share/maven/bin' >> /home/${VSCodeUser}/.bashrc
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension vscjava.vscode-java-pack --force
                 - echo "Java and Maven installed. Checking configuration"
                 - java -version 2>&1
                 - mvn --version
                 - update-alternatives --list java
-          - action: aws:runShellScript
-            name: InstallRust
-            inputs:
-              runCommand:
-                - '#!/bin/bash'
-                - !Sub sudo -u ${VSCodeUser} --login curl -fsSL https://sh.rustup.rs -o /tmp/rust_install.sh
-                - !Sub sudo -u ${VSCodeUser} --login bash /tmp/rust_install.sh -y 2>&1
-                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
-                - echo "Rust installed. Checking configuration"
-                - !Sub sudo -u ${VSCodeUser} --login rustc --version
-          - action: aws:runShellScript
-            name: InstallTerraformDnf
+          - name: InstallGoDnf
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - al2023
             inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dnf install -y golang
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - echo "Go installed. Checking configuration"
+                - go version
+          - name: InstallGoApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dpkg --configure -a
+                - add-apt-repository ppa:longsleep/golang-backports
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q golang-go
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - echo "Go installed. Checking configuration"
+                - go version
+          - name: InstallDotnetDnf
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dnf install -y dotnet-sdk-8.0
+                - dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.dotnet/tools' >> /home/${VSCodeUser}/.bashrc
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - echo "Dotnet installed. Checking configuration"
+                - dotnet --list-sdks
+          - name: InstallDotnetApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dpkg --configure -a
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q dotnet-sdk-8.0
+                - dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.dotnet/tools' >> /home/${VSCodeUser}/.bashrc
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - echo "Dotnet installed. Checking configuration"
+                - dotnet --list-sdks
+          - name: InstallRust
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub sudo -u ${VSCodeUser} --login curl -fsSL https://sh.rustup.rs -o /tmp/rust_install.sh
+                - !Sub sudo -u ${VSCodeUser} --login bash /tmp/rust_install.sh -y 2>&1
+                - echo "Rust installed. Checking configuration"
+                - !Sub sudo -u ${VSCodeUser} --login rustc --version
+          - name: InstallVite
+            action: aws:runShellScript
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - npm install -g create-vite
+                - echo "Vite installed. Checking configuration"
+                - create-vite -h
+          
+          - name: InstallDockerDnf
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dnf install -y docker
+                - !Sub usermod -aG docker ${VSCodeUser}
+                - !Sub sudo -u ${VSCodeUser} newgrp docker
+                - !Sub systemctl restart code-server@${VSCodeUser}
+                - systemctl start docker.service
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension ms-azuretools.vscode-docker --force
+                - echo "Docker installed. Checking configuration"
+                - docker --version
+                - systemctl status docker.service
+          - name: InstallDockerApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - dpkg --configure -a
+                - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                - echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release --codename --short) stable" > /etc/apt/sources.list.d/docker.list
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker-ce docker-ce-cli containerd.io
+                - !Sub usermod -aG docker ${VSCodeUser}
+                - !Sub sudo -u ${VSCodeUser} newgrp docker
+                - !Sub systemctl restart code-server@${VSCodeUser}                
+                - systemctl start docker.service
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension ms-azuretools.vscode-docker --force
+                - echo "Docker installed. Checking configuration"
+                - docker --version
+                - systemctl status docker.service
+          - name: InstallTerraformDnf
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
+            inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
                 - dnf config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
                 - dnf -y install terraform 2>&1
                 - echo "Terraform installed. Checking configuration"
                 - terraform --version
-          - action: aws:runShellScript
-            name: InstallTerraformApt
+          - name: InstallTerraformApt
+            action: aws:runShellScript
             precondition:
               StringEquals:
                 - '{{ LinuxFlavor }}'
                 - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
+                - dpkg --configure -a
                 - curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-keyring.gpg
                 - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-keyring.gpg] https://apt.releases.hashicorp.com/ $(lsb_release --codename --short) main" >> /etc/apt/sources.list.d/hashicorp.list
                 - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q terraform
                 - echo "Terraform installed. Checking configuration"
                 - terraform --version
-          - action: aws:runShellScript
-            name: DownloadAssets
+          - name: InstallGitHubCLIDnf
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - !Sub |
-                  if [[ -z "${AssetZipS3Path}" ]]
-                  then
-                    echo "No assets"
-                  else
-                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
-                    aws s3 cp s3://${AssetZipS3Path} /tmp/assets.zip
-                    unzip -o /tmp/assets.zip -d ${HomeFolder}
-                    chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} init
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} add .
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} commit -m 'Initial commit'
-                    echo "Assets downloaded. Checking configuration: ${HomeFolder}"
-                    ls -la ${HomeFolder}
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} branch
-                  fi
-          - action: aws:runShellScript
-            name: DownloadFolders
+                - dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+                - dnf -y install gh
+                - echo "GitHub CLI installed. Checking configuration"
+                - gh --version
+          - name: InstallGitHubCLIApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - !Sub |
-                  if [[ -z "${FolderZipS3Path}" ]]
-                  then
-                    echo "No folders"
-                  else
-                    rm -rf /tmp/folder
-                    mkdir -p /tmp/folder && chown -R ${VSCodeUser}:${VSCodeUser} /tmp/folder
-                    aws s3 cp s3://${FolderZipS3Path} /tmp/asset-folder.zip
-                    unzip -o /tmp/asset-folder.zip -d /tmp/folder
-                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/folder
-                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
-                    cd "${HomeFolder}" && cd ..
-                    if [[ $(pwd) ==  "/" ]]
-                    then
-                      targetRootFolder=""
-                    else
-                      targetRootFolder=$(pwd)
-                      chown -R ${VSCodeUser}:${VSCodeUser} .
-                    fi
-                    find "/tmp/folder" -maxdepth 1 -mindepth 1 -type d | while read sourceFolder; do
-                      folder="$(basename $sourceFolder)"
-                      echo $folder
-                      targetFolder=$targetRootFolder/$folder
-                      if [[ $targetRootFolder == "" ]]
-                      then
-                        mv $sourceFolder /
-                      else
-                        mv $sourceFolder $targetRootFolder
-                      fi
-                      chown -R ${VSCodeUser}:${VSCodeUser} $targetFolder
-                      sudo -u ${VSCodeUser} git -C $targetFolder init
-                      sudo -u ${VSCodeUser} git -C $targetFolder add .
-                      sudo -u ${VSCodeUser} git -C $targetFolder commit -m "Initial commit"
-                      echo "Folder downloaded. Checking configuration: $targetFolder"
-                      ls -la $targetFolder
-                    done
-                    rm -rf /tmp/folder
-                  fi
-          - action: aws:runShellScript
-            name: DownloadBranches
+                - dpkg --configure -a
+                - curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
+                - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+                - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q gh
+                - echo "GitHub CLI installed. Checking configuration"
+                - gh --version
+
+          - name: InstallDockerScoutDnf
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - al2023
             inputs:
+              timeoutSeconds: 300
               runCommand:
                 - '#!/bin/bash'
-                - !Sub |
-                  if [[ -z "${BranchZipS3Path}" ]]
-                  then
-                    echo "No branches"
-                  else
-                    rm -rf /tmp/branch
-                    mkdir -p /tmp/branch && chown -R ${VSCodeUser}:${VSCodeUser} /tmp/branch
-                    mkdir -p /tmp/git && chown -R ${VSCodeUser}:${VSCodeUser} /tmp/git
-                    aws s3 cp s3://${BranchZipS3Path} /tmp/branch/branch.zip
-                    unzip -o /tmp/branch/branch.zip -d /tmp/branch
-                    chown -R ${VSCodeUser}:${VSCodeUser} /tmp/branch
-                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} init
-                    mv ${HomeFolder}/.git /tmp/git
-                    rm -rf ${HomeFolder}
-                    mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
-                    mv /tmp/git/.git ${HomeFolder}
-                    find /tmp/branch -maxdepth 1 -mindepth 1 -type d | while read sourceFolder; do
-                      branch="$(basename $sourceFolder)"
-                      echo $branch
-                      sudo -u ${VSCodeUser} git -C ${HomeFolder} checkout -b $branch 2>&1
-                      cp -a $sourceFolder/. ${HomeFolder}
-                      sudo -u ${VSCodeUser} git -C ${HomeFolder} add .
-                      sudo -u ${VSCodeUser} git -C ${HomeFolder} commit -m "Initial commit $branch"
-                      mv ${HomeFolder}/.git /tmp/git
-                      rm -rf ${HomeFolder}
-                      mkdir ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
-                      mv /tmp/git/.git ${HomeFolder}
-                    done
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} checkout main 2>&1
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} restore .
-                    echo "Branches downloaded. Checking configuration: $HomeFolder"
-                    sudo -u ${VSCodeUser} git -C ${HomeFolder} branch
-                    ls -la ${HomeFolder}
-                  fi
+                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+                - sh install-scout.sh
+                - echo "Docker Scout installed. Checking configuration"
+                - docker scout --version
+          - name: InstallDockerScoutApt
+            action: aws:runShellScript
+            precondition:
+              StringEquals:
+                - '{{ LinuxFlavor }}'
+                - ubuntu
+            inputs:
+              timeoutSeconds: 300
+              runCommand:
+                - '#!/bin/bash'
+                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+                - sh install-scout.sh
+                - echo "Docker Scout installed. Checking configuration"
+                - docker scout --version
+# Install Workshop specific packages here
 
+  SSMDocLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: The Amazon EC2 ssm:*CommandInvocation API actions do not support resource-level permissions, so you cannot control which individual resources users can view in the console. Therefore, the * wildcard is necessary in the Resource element. See https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssystemsmanager.html
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.${AWS::URLSuffix}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSMDocOnEC2
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/${VSCodeSSMDoc}
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/AmazonCloudWatch-ManageAgent
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${VSCodeInstance}
+              - Effect: Allow
+                Action:
+                  - ssm:ListCommandInvocations
+                  - ssm:GetCommandInvocation
+                Resource: '*'
 
+  RunSSMDocLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Run SSM document on EC2 instance
+      Handler: index.lambda_handler
+      Runtime: python3.13
+      MemorySize: 128
+      Timeout: 600
+      Environment:
+        Variables:
+          RetrySleep: 2900
+          AbortTimeRemaining: 3200
+      Architectures:
+        - arm64
+      Role: !GetAtt SSMDocLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import logging
+          import time
+          import os
 
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
 
-          
-  
+          def lambda_handler(event, context):
+              logger.debug(f'event: {event}')
+              logger.debug(f'context: {context}')
 
-  VSCodeInstanceRole:
+              if event['RequestType'] != 'Create':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
+              else:
+                  sleep_ms = int(os.environ.get('RetrySleep'))
+                  abort_time_remaining_ms = int(os.environ.get('AbortTimeRemaining'))
+                  resource_properties = event['ResourceProperties']
+                  instance_id = resource_properties['InstanceId']
+                  document_name = resource_properties['DocumentName']
+                  cloudwatch_log_group_name = resource_properties['CloudWatchLogGroupName']
+
+                  logger.info(f'Running SSM Document {document_name} on EC2 instance {instance_id}. Logging to {cloudwatch_log_group_name}')
+
+                  del resource_properties['ServiceToken']
+                  if 'ServiceTimeout' in resource_properties:
+                      del resource_properties['ServiceTimeout']
+                  del resource_properties['InstanceId']
+                  del resource_properties['DocumentName']
+                  del resource_properties['CloudWatchLogGroupName']
+                  if 'PhysicalResourceId' in resource_properties:
+                      del resource_properties['PhysicalResourceId']
+
+                  logger.debug(f'resource_properties filtered: {resource_properties}')
+
+                  parameters = {}
+                  for key, value in resource_properties.items():
+                      parameters[key] = [value]
+
+                  logger.debug(f'parameters: {parameters}')
+
+                  retry = True
+                  attempt_no = 0
+                  time_remaining_ms = context.get_remaining_time_in_millis()
+
+                  ssm = boto3.client('ssm')
+
+                  while (retry == True):
+                      attempt_no += 1
+                      logger.info(f'Attempt: {attempt_no}. Time Remaining: {time_remaining_ms/1000}s')
+                      try:
+                          response = ssm.send_command(
+                              InstanceIds = [instance_id],
+                              DocumentName = document_name,
+                              CloudWatchOutputConfig = {'CloudWatchLogGroupName': cloudwatch_log_group_name, 'CloudWatchOutputEnabled': True},
+                              Parameters = parameters
+                          )
+                          logger.debug(f'response: {response}')
+                          command_id = response['Command']['CommandId']
+                          responseData = {'CommandId': command_id}
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, reason='OK')
+                          retry = False
+
+                      except ssm.exceptions.InvalidInstanceId as e:
+                          time_remaining_ms = context.get_remaining_time_in_millis()
+                          if (time_remaining_ms > abort_time_remaining_ms):
+                              logger.info(f'Instance {instance_id} not ready. Sleeping: {sleep_ms/1000}s')
+                              time.sleep(sleep_ms/1000)
+                              retry = True
+                          else:
+                              logger.info(f'Instance {instance_id} not ready, timed out. Time remaining {time_remaining_ms/1000}s < Abort time remaining {abort_time_remaining_ms/1000}s')
+                              logger.error(e, exc_info=True)
+                              cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason='Timed out. Time remaining: ' + str(time_remaining_ms/1000) + 's < Abort time remaining: ' + str(abort_time_remaining_ms/1000) + 's')
+                              retry = False
+
+                      except Exception as e:
+                          logger.error(e, exc_info=True)
+                          cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
+                          retry = False
+
+  RunVSCodeSSMDoc:
+    Type: Custom::RunSSMDocLambda
+    Properties:
+      ServiceToken: !GetAtt RunSSMDocLambda.Arn
+      ServiceTimeout: 305
+      InstanceId: !Ref VSCodeInstance
+      DocumentName: !Ref VSCodeSSMDoc
+      CloudWatchLogGroupName: !Sub /aws/ssm/${VSCodeSSMDoc}
+      VSCodePassword: !GetAtt SecretPlaintext.password
+      LinuxFlavor: !If [IsAL2023, 'al2023', 'ubuntu']
+
+  VSCodeInstanceBootstrapRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -1052,33 +1227,21 @@ Resources:
           - Effect: Allow
             Principal:
               Service:
-                - ec2.amazonaws.com
-                - ssm.amazonaws.com
-            Action:
-              - sts:AssumeRole
+                - !Sub ec2.${AWS::URLSuffix}
+                - !Sub ssm.${AWS::URLSuffix}
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
         - !Sub arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonQDeveloperAccess
         - !Sub arn:${AWS::Partition}:iam::aws:policy/ReadOnlyAccess
-      Policies:
-      - PolicyName: AllowSSMParameterAccess
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource:
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/rds/db-endpoint
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/rds/db-username
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/rds/db-password
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSCodeCommitPowerUser
 
   VSCodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - !Ref VSCodeInstanceRole
+        - !Ref VSCodeInstanceBootstrapRole
 
   VSCodeInstance:
     Type: AWS::EC2::Instance
@@ -1104,7 +1267,7 @@ Resources:
           #cloud-config
           hostname: ${InstanceName}
           runcmd:
-            - !Sub mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+            - mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
       Tags:
       - Key: Name
         Value: !Ref InstanceName
@@ -1116,7 +1279,9 @@ Resources:
         DefaultTTL: 86400
         MaxTTL: 31536000
         MinTTL: 1
-        Name: !Join ['-', ['VSCodeServer', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+        Name: !Sub
+        - ${InstanceName}-${RandomGUID}
+        - RandomGUID: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId ]]]]
         ParametersInCacheKeyAndForwardedToOrigin:
           CookiesConfig:
             CookieBehavior: all
@@ -1196,13 +1361,8 @@ Resources:
         - Description: Allow HTTP from com.amazonaws.global.cloudfront.origin-facing
           IpProtocol: tcp
           FromPort: 80
-          ToPort: 80
-          SourcePrefixListId: !FindInMap [AWSRegions2PrefixListID, !Ref 'AWS::Region', PrefixList]
-        - Description: Allow access to port 3000 from anywhere
-          IpProtocol: tcp
-          FromPort: 3000
           ToPort: 3000
-          CidrIp: 0.0.0.0/0
+          SourcePrefixListId: !FindInMap [AWSRegionsPrefixListID, !Ref 'AWS::Region', PrefixList]
 
   VSCodeHealthCheckLambdaRole:
     Type: AWS::IAM::Role
@@ -1210,24 +1370,12 @@ Resources:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - !Sub lambda.${AWS::URLSuffix}
-          Action:
-          - sts:AssumeRole
-      Path: /
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.${AWS::URLSuffix}
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: AwsSecretsManager
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: !Ref VSCodeSecret
 
   VSCodeHealthCheckLambda:
     Type: AWS::Lambda::Function
@@ -1241,70 +1389,81 @@ Resources:
           - id: W92
             reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
     Properties:
-      Description: Run health check on VSCode Server instance
+      Description: Run health check on VS code-server instance
       Handler: index.lambda_handler
-      Runtime: python3.12
+      Runtime: python3.13
       MemorySize: 128
       Timeout: 600
+      Environment:
+        Variables:
+          RetrySleep: 2900
+          AbortTimeRemaining: 5000
       Architectures:
         - arm64
       Role: !GetAtt VSCodeHealthCheckLambdaRole.Arn
       Code:
         ZipFile: |
-          import boto3
           import json
           import cfnresponse
           import logging
           import time
+          import os
           import http.client
           from urllib.parse import urlparse
 
           logger = logging.getLogger()
           logger.setLevel(logging.INFO)
 
-          SLEEP_MS = 2900
-
           def healthURLOk(url):
               # Using try block to catch connection errors and JSON conversion errors
               try:
+                  logger.debug(f'url: {url}')
                   parsed_url = urlparse(url)
                   if parsed_url.scheme == 'https':
+                      logger.debug(f'Trying https: {parsed_url.netloc}. Parsed_url: {parsed_url}')
                       conn = http.client.HTTPSConnection(parsed_url.netloc)
                   else:
+                      logger.debug(f'Trying http: {parsed_url.netloc}. Parsed_url: {parsed_url}')
                       conn = http.client.HTTPConnection(parsed_url.netloc)
-
                   conn.request("GET", parsed_url.path or "/")
                   response = conn.getresponse()
-
+                  logger.debug(f'response: {response}')
+                  logger.debug(f'response.status: {response.status}')
+                  content = response.read()
+                  logger.debug(f'content: {content}')
                   # This will be true for any return code below 4xx (so 3xx and 2xx)
                   if 200 <= response.status < 400:
-                      content = response.read()
-                      logger.info(f'URL returned {response.status}, {content}')
                       response_dict = json.loads(content.decode('utf-8'))
+                      logger.debug(f'response_dict: {response_dict}')
                       # Checking for expected keys and if the key has the expected value
                       if 'status' in response_dict and (response_dict['status'].lower() == 'alive' or response_dict['status'].lower() == 'expired'):
                           # Response code 200 and correct JSON returned
+                          logger.info(f'Health check OK. Status: {response_dict['status'].lower()}')
                           return True
                       else:
                           # Response code 200 but the 'status' key is either not present or does not have the value 'alive' or 'expired'
+                          logger.info(f'Health check failed. Status: {response_dict['status'].lower()}')
                           return False
                   else:
                       # Response was not ok (error 4xx or 5xx)
-                      logger.debug(f'URL returned {response.status}')
+                      logger.info(f'Healthcheck failed. Return code: {response.status}')
                       return False
 
               except http.client.HTTPException as e:
                   # URL malformed or endpoint not ready yet, this should only happen if we can not DNS resolve the URL
-                  logger.info(f'URL invalid and/or endpoint not ready yet: {str(e)}')
+                  logger.error(e, exc_info=True)
+                  logger.error(f'Healthcheck failed: HTTP Exception. URL invalid and/or endpoint not ready yet')
                   return False
 
-              except json.decoder.JSONDecodeError:
+              except json.decoder.JSONDecodeError as e:
                   # The response we got was not a properly formatted JSON
-                  logger.error(f"Did not get JSON object from URL as expected: {str(e)}")
+                  logger.error(e, exc_info=True)
+                  logger.info(f'Healthcheck failed: Did not get JSON object from URL as expected')
                   return False
 
               except Exception as e:
-                  logger.error(e)
+                  logger.error(e, exc_info=True)
+                  logger.info(f'Healthcheck failed: General error')
                   return False
 
               finally:
@@ -1319,43 +1478,182 @@ Resources:
                   return False
 
           def lambda_handler(event, context):
-              logger.debug(f'event: %s', event)
-
+              logger.debug(f'event: {event}')
+              logger.debug(f'context: {context}')
               try:
                   if event['RequestType'] != 'Create':
                       cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
                   else:
-                      resource_properties = (event['ResourceProperties'])
-                      logger.debug(f'resource_properties: %s', resource_properties)
-                      url = (event['ResourceProperties']['Url'])
+                      sleep_ms = int(os.environ.get('RetrySleep'))
+                      abort_time_remaining_ms = int(os.environ.get('AbortTimeRemaining'))
+                      resource_properties = event['ResourceProperties']
+                      url = resource_properties['Url']
+
                       logger.info(f'Testing url: {url}')
-                      time_remaining = context.get_remaining_time_in_millis()
+
+                      time_remaining_ms = context.get_remaining_time_in_millis()
                       attempt_no = 0
                       health_check = False
-                      while (attempt_no == 0 or (time_remaining > SLEEP_MS and not health_check)):
+                      while (attempt_no == 0 or (time_remaining_ms > abort_time_remaining_ms and not health_check)):
                           attempt_no += 1
-                          logger.info(f'Attempt: {attempt_no}. Time Remaining: {time_remaining/1000}s')
+                          logger.info(f'Attempt: {attempt_no}. Time Remaining: {time_remaining_ms/1000}s')
                           health_check = healthURLOk(url)
                           if not health_check:
-                              time.sleep(SLEEP_MS/1000)
-                          time_remaining = context.get_remaining_time_in_millis()
+                              logger.debug(f'Healthcheck failed. Sleeping: {sleep_ms/1000}s')
+                              time.sleep(sleep_ms/1000)
+                          time_remaining_ms = context.get_remaining_time_in_millis()
                       if health_check:
-                          cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='VSCode healthcheck successful')
+                          logger.info(f'Health check successful. Attempts: {attempt_no}. Time Remaining: {time_remaining_ms/1000}s')
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='VS code-server healthcheck successful')
                       else:
-                          cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason='VSCode healthcheck status not alive or expired. Timed out')
+                          logger.info(f'Health check failed. Timed out. Attempts: {attempt_no}. Time remaining {time_remaining_ms/1000}s < Abort time remaining {abort_time_remaining_ms/1000}s')
+                          cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason='VS code-server healthcheck failed. Timed out after ' + str(attempt_no) + ' attempts')
+                          logger.info(f'Response sent')
+
               except Exception as e:
-                  logger.error(e)
+                  logger.error(e, exc_info=True)
+                  logger.info(f'Health check failed. General exception')
                   cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
 
   Healthcheck:
     Type: Custom::VSCodeHealthCheckLambda
     Properties:
       ServiceToken: !GetAtt VSCodeHealthCheckLambda.Arn
-      ServiceTimeout: 605
+      ServiceTimeout: 610
       Url: !Sub https://${CloudFrontDistribution.DomainName}/healthz
 
+  CheckSSMDocLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Check SSM document on EC2 instance
+      Handler: index.lambda_handler
+      Runtime: python3.13
+      MemorySize: 128
+      Timeout: 600
+      Environment:
+        Variables:
+          RetrySleep: 2900
+          AbortTimeRemaining: 5000
+      Architectures:
+        - arm64
+      Role: !GetAtt SSMDocLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import logging
+          import time
+          import os
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def lambda_handler(event, context):
+              logger.debug(f'event: {event}')
+              logger.debug(f'context: {context}')
+
+              if event['RequestType'] != 'Create':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
+              else:
+                  sleep_ms = int(os.environ.get('RetrySleep'))
+                  abort_time_remaining_ms = int(os.environ.get('AbortTimeRemaining'))
+                  resource_properties = event['ResourceProperties']
+                  instance_id = resource_properties['InstanceId']
+                  document_name = resource_properties['DocumentName']
+
+                  logger.info(f'Checking SSM Document {document_name} on EC2 instance {instance_id}')
+
+                  retry = True
+                  attempt_no = 0
+                  time_remaining_ms = context.get_remaining_time_in_millis()
+
+                  ssm = boto3.client('ssm')
+
+                  while (retry == True):
+                      attempt_no += 1
+                      logger.info(f'Attempt: {attempt_no}. Time Remaining: {time_remaining_ms/1000}s')
+                      try:
+                          # check to see if document has completed running on instance
+                          response = ssm.list_command_invocations(
+                              InstanceId=instance_id,
+                              Details=True
+                          )
+                          logger.debug(f'Response: {response}')
+                          for invocation in response['CommandInvocations']:
+                              if invocation['DocumentName'] == document_name:
+                                  invocation_status = invocation['Status']
+                                  if invocation_status == 'Success':
+                                      logger.info(f'SSM Document {document_name} on EC2 instance {instance_id} complete. Status: {invocation_status}')                                  
+                                      cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='OK')
+                                      retry = False
+                                  elif invocation_status == 'Failed' or invocation_status == 'Cancelled' or invocation_status == 'TimedOut':
+                                      logger.info(f'SSM Document {document_name} on EC2 instance {instance_id} failed. Status: {invocation_status}')
+                                      reason = ''
+                                      # Get information on step that failed, otherwise it's cancelled or timeout
+                                      for step in invocation['CommandPlugins']:
+                                          step_name = step['Name']
+                                          step_status = step['Status']
+                                          step_output = step['Output']
+                                          logger.debug(f'Step {step_name} {step_status}: {step_output}')
+                                          if step_status != 'Success':
+                                              try:
+                                                  response_step = ssm.get_command_invocation(
+                                                      CommandId=invocation['CommandId'],
+                                                      InstanceId=instance_id,
+                                                      PluginName=step_name
+                                                  )
+                                                  logger.debug(f'Step details: {response_step}')
+                                                  step_output = response_step['StandardErrorContent']
+                                              except Exception as e:
+                                                  logger.error(e, exc_info=True)
+                                              logger.info(f'Step {step_name} {step_status}: {step_output}')
+                                              if reason == '':
+                                                  reason = f'Step {step_name} {step_status}: {step_output}'
+                                              else:
+                                                  reason += f'\nStep {step_name} {step_status}: {step_output}'
+                                      if reason == '':
+                                          reason = f'SSM Document {document_name} on EC2 instance {instance_id} failed. Status: {invocation_status}'
+                                      logger.info(f'{reason}')
+                                      cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=reason)
+                                      retry = False
+                                  else:
+                                      logger.info(f'SSM Document {document_name} on EC2 instance {instance_id} not yet complete. Status: {invocation_status}')
+                                      retry = True
+                          if retry == True:
+                              if (time_remaining_ms > abort_time_remaining_ms):
+                                  logger.info(f'Sleeping: {sleep_ms/1000}s')
+                                  time.sleep(sleep_ms/1000)
+                                  time_remaining_ms = context.get_remaining_time_in_millis()
+                              else:
+                                  logger.info(f'Time remaining {time_remaining_ms/1000}s < Abort time remaining {abort_time_remaining_ms/1000}s')
+                                  logger.info(f'Aborting check as time remaining {time_remaining_ms/1000}s < Abort time remaining {abort_time_remaining_ms/1000}s')
+                                  cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason='Timed out. Time remaining: ' + str(time_remaining_ms/1000) + 's < Abort time remaining: ' + str(abort_time_remaining_ms/1000) + 's')
+                                  retry = False
+                      except Exception as e:
+                          logger.error(e, exc_info=True)
+                          cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
+                          retry = False
+
+  CheckVSCodeSSMDoc:
+    Type: Custom::CheckSSMDocLambda
+    DependsOn: Healthcheck   
+    Properties:   
+      ServiceToken: !GetAtt CheckSSMDocLambda.Arn
+      ServiceTimeout: 610
+      InstanceId: !Ref VSCodeInstance
+      DocumentName: !Ref VSCodeSSMDoc
+
 Outputs:
-  VSCODEURL:
+  URL:
     Description: VSCode-Server URL
     Value: !Sub https://${CloudFrontDistribution.DomainName}/?folder=${HomeFolder}
   Password:

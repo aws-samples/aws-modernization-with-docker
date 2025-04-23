@@ -31,27 +31,44 @@ Docker version 27.3.1, build ce1223035a
 
 ## **Steps**
 
-### **1. Clone the Repository**
+### **1. GitHub Authentication**
 
-Using git to clone the repository.
+Authenticate with GitHub using the pre-installed GitHub CLI:
 
 ```sh
-$ git clone https://github.com/aws-samples/Rent-A-Room.git
+# Login to GitHub
+gh auth login
 ```
 
-### **2. Navigate to the Working Directory**
+You will be guided through several prompts:
 
-If using a local development environment, navigate to the cloned repository:
+1. Select **GitHub.com**
+2. Select **HTTPS** as your preferred protocol
+3. When asked "Authenticate Git with your GitHub credentials?": Enter **Y**
+4. Select **Login with a web browser**
+5. Copy the one-time code shown in your terminal
+6. Press Enter to open the browser
+7. Paste the code in GitHub and authorize access
+
+![Github Cli Auth](/images/gh-auth.png)
+
+### **2.  Fork and Clone the Repository**
+
+Instead of cloning directly, we'll fork the repository first:
 
 ```sh
-$ cd Rent-A-Room
+# Fork and clone the repository
+gh repo fork aws-samples/Rent-A-Room --clone=true
+
+# Change to the repository directory
+cd Rent-A-Room
 ```
 
 ### **3. Creating the Dockerfile**
 
 Run the following command to save the content in the **Dockerfile**:
 
-```
+```bash
 cat << 'EOF' > Dockerfile
 # Build stage
 FROM node:12 as build
@@ -149,20 +166,36 @@ server {
 EOF
 ```
 
+##### Configuring for Multiple Environments(Vs-code + localhost)
+
+```bash
+# Create development environment file:
+cat << 'EOF' > .env.development
+REACT_APP_API_URL=/proxy/3000
+EOF
+
+# Create production environment file:
+cat << 'EOF' > .env.production
+REACT_APP_API_URL=/api
+EOF
+```
+
 ##### Update Configuration Files
 
 Run the following commands to update both package.json and App.js:
 
 ```bash
+# Add environment check before the return statement
+sed -i '/function App() {/a\  const isVSCodeServer = window.location.href.includes('\''cloudfront.net'\'');\n  const basename = isVSCodeServer ? '\''/proxy/3000'\'' : '\''/'\'';' src/App.js
+
+# Update Router to use basename
+sed -i 's/<Router>/<Router basename={basename}>/' src/App.js
+
 # Update package.json to add homepage
 sed -i '/"private": true,/a\  "homepage": ".",' package.json
-
-# Update App.js to add basename to Router
-sed -i 's/<Router>/<Router basename="\/proxy\/3000">/' src/App.js
 ```
 
 ---
-
 
 ### 4. Build the Docker Image
 
