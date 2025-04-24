@@ -1034,35 +1034,6 @@ Resources:
                 - apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get install -y -q gh
                 - echo "GitHub CLI installed. Checking configuration"
                 - gh --version
-
-          - name: InstallDockerScoutDnf
-            action: aws:runShellScript
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - al2023
-            inputs:
-              timeoutSeconds: 300
-              runCommand:
-                - '#!/bin/bash'
-                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
-                - sh install-scout.sh
-                - echo "Docker Scout installed. Checking configuration"
-                - docker scout --version
-          - name: InstallDockerScoutApt
-            action: aws:runShellScript
-            precondition:
-              StringEquals:
-                - '{{ LinuxFlavor }}'
-                - ubuntu
-            inputs:
-              timeoutSeconds: 300
-              runCommand:
-                - '#!/bin/bash'
-                - curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
-                - sh install-scout.sh
-                - echo "Docker Scout installed. Checking configuration"
-                - docker scout --version
 # Install Workshop specific packages here
 
   SSMDocLambdaRole:
