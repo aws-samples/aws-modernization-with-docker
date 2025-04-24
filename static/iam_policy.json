@@ -230,6 +230,21 @@
             "Resource": "*"
         },
         {
+            "Sid": "CodeStarConnectionsPermissions",
+            "Effect": "Allow",
+            "Action": [
+                "codestar-connections:CreateConnection",
+                "codestar-connections:DeleteConnection",
+                "codestar-connections:GetConnection",
+                "codestar-connections:ListConnections",
+                "codestar-connections:UpdateConnectionInstallation",
+                "codestar-connections:TagResource",
+                "codestar-connections:UntagResource",
+                "codestar-connections:ListTagsForResource"
+            ],
+            "Resource": "*"
+        },
+        {
             "Sid": "ServiceLinkedRolePermissions",
             "Effect": "Allow",
             "Action": [
