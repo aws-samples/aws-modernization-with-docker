@@ -21,6 +21,7 @@ AWS CodeStar Connections provides a secure way to connect your GitHub repositori
 Run the following command to create a new GitHub CodeStar Connection and save the ARN to a variable:
 
 ```bash
+# Create the connection and save the ARN to a variable
 CONNECTION_ARN=$(aws codestar-connections create-connection \
 --provider-type GitHub \
 --connection-name my-github-connection \
@@ -29,6 +30,9 @@ CONNECTION_ARN=$(aws codestar-connections create-connection \
 
 # Verify the connection ARN was captured correctly
 echo $CONNECTION_ARN
+
+# Save the connection ARN to a file for later use
+echo "export CONNECTION_ARN=$CONNECTION_ARN" > connection-config.sh
 ```
 
 **✅ Expected Output:**
@@ -73,11 +77,25 @@ echo "GitHub Repository: $GITHUB_REPO"
 echo "GitHub Branch: $GITHUB_BRANCH"
 ```
 
-### 4️⃣ Deploy CloudFormation with GitHub Connection
+### 4️⃣ Download and Deploy CloudFormation with GitHub Connection
+
+First, download the CloudFormation template:
+
+```bash
+# Download the ECS pipeline setup template
+curl -O https://raw.githubusercontent.com/aws-samples/aws-modernization-with-docker/main/static/infrastructure/ecs-pipeline-setup.yaml
+```
 
 After authorization and retrieving your GitHub username, deploy your CloudFormation stack:
 
 ```bash
+# Source the connection config file to get the CONNECTION_ARN
+source connection-config.sh
+
+# Verify the connection ARN is available
+echo "Using connection ARN: $CONNECTION_ARN"
+
+# Deploy the CloudFormation stack
 aws cloudformation deploy --template-file ecs-pipeline-setup.yaml --stack-name ECSPipelineStack \
 --parameter-overrides \
 GitHubOwner="$GITHUB_USERNAME" \
@@ -100,6 +118,18 @@ ECSServiceName="rent-a-room-service" \
 ## ⚠️ Troubleshooting
 
 If you encounter issues:
+
+- **Lost Connection ARN**: If you lose your terminal session or the CONNECTION_ARN variable, you can retrieve it with:
+  ```bash
+  # List all connections
+  aws codestar-connections list-connections --query "Connections[?ConnectionName=='my-github-connection'].ConnectionArn" --output text
+  
+  # Save it to the variable again
+  CONNECTION_ARN=$(aws codestar-connections list-connections --query "Connections[?ConnectionName=='my-github-connection'].ConnectionArn" --output text)
+  
+  # Update the config file
+  echo "export CONNECTION_ARN=$CONNECTION_ARN" > connection-config.sh
+  ```
 
 - Ensure your GitHub account has admin access to the repository
 - Check that the connection status shows as **Available** in the AWS Console

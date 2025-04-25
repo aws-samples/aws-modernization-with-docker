@@ -60,7 +60,7 @@ Resources:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonECS-FullAccess
+        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       Policies:
         - PolicyName: CodeBuildServiceRolePolicy
@@ -103,7 +103,7 @@ Resources:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonECS-FullAccess
+        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
       Policies:
         - PolicyName: CodePipelineServiceRolePolicy
           PolicyDocument:
@@ -126,7 +126,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - codestar-connections:UseConnection
-                Resource: !Ref CodeStarConnectionArn
+                Resource: "arn:aws:codestar-connections:us-east-1:970547348526:connection/7e2a4e4f-6913-408b-943e-1f27c32d21b8"
               - Effect: Allow
                 Action:
                   - ecs:DescribeServices
@@ -259,7 +259,7 @@ Resources:
                 Provider: CodeStarSourceConnection
                 Version: '1'
               Configuration:
-                ConnectionArn: !Ref CodeStarConnectionArn
+                ConnectionArn: "arn:aws:codestar-connections:us-east-1:970547348526:connection/7e2a4e4f-6913-408b-943e-1f27c32d21b8"
                 FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}
                 BranchName: !Ref GitHubBranch
               OutputArtifacts:
