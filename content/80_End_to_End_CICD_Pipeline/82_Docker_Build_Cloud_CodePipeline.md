@@ -1,7 +1,7 @@
 ---
 title: "Docker Build Cloud – CodePipeline Perspective"
 chapter: false
-weight: 35
+weight: 82
 ---
 
 # 🔄 Docker Build Cloud – CodePipeline Perspective
