@@ -12,11 +12,11 @@ Docker Build Cloud is a powerful remote build service that accelerates container
 
 Docker Build Cloud is available with:
 
-- **Docker Pro** (\$9/month)
-- **Docker Team** (\$15/user/month)
-- **Docker Business** (\$24/user/month)
+- **Docker Pro** ($9/month)
+- **Docker Team** ($15/user/month)
+- **Docker Business** ($24/user/month)
 
-If you don't have a paid subscription, please use the [Docker Build Local](../35_Docker_Build_Local/) guide instead.
+> **IMPORTANT**: If you don't have a paid subscription, please use the [Docker Build Local](../35_Docker_Build_Local/) guide instead.
 
 For subscription details, visit [Docker Pricing](https://www.docker.com/pricing/).
 
@@ -40,11 +40,11 @@ For subscription details, visit [Docker Pricing](https://www.docker.com/pricing/
 Authenticate with GitHub using the pre-installed GitHub CLI:
 
 ```sh
-# Login to GitHub
-gh auth login
+# Check if already authenticated
+gh auth status || gh auth login
 ```
 
-You will be guided through several prompts:
+If you need to authenticate, you will be guided through several prompts:
 
 1. Select **GitHub.com**
 2. Select **HTTPS** as your preferred protocol
@@ -56,7 +56,7 @@ You will be guided through several prompts:
 
 ![Github Cli Auth](/images/gh-auth.png)
 
-### **2.  Fork and Clone the Repository**
+### **2. Fork and Clone the Repository**
 
 Instead of cloning directly, we'll fork the repository first:
 
@@ -68,9 +68,9 @@ gh repo fork aws-samples/Rent-A-Room --clone=true
 cd Rent-A-Room
 ```
 
-### **Step 2: Create the Dockerfile**
+### **3. Create the Configuration Files**
 
-Run the following command to save the content in the **Dockerfile**:
+First, let's create the Dockerfile:
 
 ```bash
 cat << 'EOF' > Dockerfile
@@ -89,6 +89,73 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 EOF
+```
+
+Next, create the nginx configuration file:
+
+```bash
+cat << 'EOF' > nginx.conf
+server {
+    listen 80;
+    server_name localhost;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Support for SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Serve static files
+    location /static/ {
+        expires 1y;
+        add_header Cache-Control "public";
+    }
+
+    # Handle all API requests
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+```
+
+### **3.1 Configure for Multiple Environments**
+
+Create environment files to handle different deployment scenarios:
+
+```bash
+# Create development environment file:
+cat << 'EOF' > .env.development
+REACT_APP_API_URL=/proxy/3000
+EOF
+
+# Create production environment file:
+cat << 'EOF' > .env.production
+REACT_APP_API_URL=/api
+EOF
+```
+
+### **3.2 Update Configuration Files**
+
+Update both package.json and App.js to handle different environments:
+
+```bash
+# Add environment check before the return statement in App.js
+sed -i '/function App() {/a\  const isVSCodeServer = window.location.href.includes('\''cloudfront.net'\'');\n  const basename = isVSCodeServer ? '\''/proxy/3000'\'' : '\''/'\'';' src/App.js
+
+# Update Router to use basename
+sed -i 's/<Router>/<Router basename={basename}>/' src/App.js
+
+# Update package.json to add homepage
+sed -i '/"private": true,/a\  "homepage": ".",' package.json
 ```
 
 ---
@@ -117,24 +184,26 @@ RUN npm run build
 - **COPY . .**: Copies the rest of the application code into the container.
 - **RUN npm run build**: Builds the application (typically creating a build or dist folder).
 
-##### Build Stage
+##### Production Stage
 
 ```bash
 # Production stage
 FROM nginx:1.14
 COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-**FROM nginx:1.14**: Starts a new stage using the Nginx 1.14 base image.
-**COPY --from=build /app/build /usr/share/nginx/html**: Copies the built files from the previous stage to Nginx's serving directory.
-**EXPOSE 80**: Informs Docker that the container will listen on port 80.
-**CMD ["nginx", "-g", "daemon off;"]**: Starts Nginx in the foreground when the container runs.
+- **FROM nginx:1.14**: Starts a new stage using the Nginx 1.14 base image.
+- **COPY --from=build /app/build /usr/share/nginx/html**: Copies the built files from the previous stage to Nginx's serving directory.
+- **COPY nginx.conf /etc/nginx/conf.d/default.conf**: Copies the Nginx configuration file.
+- **EXPOSE 80**: Informs Docker that the container will listen on port 80.
+- **CMD ["nginx", "-g", "daemon off;"]**: Starts Nginx in the foreground when the container runs.
 
 ---
 
-### **Step 3: Verify Docker Build Cloud Setup**
+### **4. Verify Docker Build Cloud Setup**
 
 Ensure Docker Build Cloud is properly configured:
 
@@ -145,16 +214,11 @@ To verify buildx is available:
 docker buildx version
 ```
 
-To create and configure builder instance:
+To create and configure builder instance (handles existing builders):
 
 ```bash
-docker buildx create --name cloud-builder --use
-```
-
-the above will output:
-
-```bash
-cloud-builder
+# Check if builder exists first, create if it doesn't
+docker buildx ls | grep cloud-builder || docker buildx create --name cloud-builder --use
 ```
 
 Bootstrap the builder instance using this command:
@@ -175,23 +239,26 @@ Driver:        docker-container
 ......
 ```
 
-### **Step 4: Build Your Image with Docker Build Cloud**
+### **5. Build Your Image with Docker Build Cloud**
 
 Build the image using Docker Build Cloud:
 
 ```bash
-docker buildx build --load --platform linux/arm64 -t rent-a-room .
+# Measure build time
+start_time=$(date +%s)
+docker buildx build --load -t rent-a-room .
+end_time=$(date +%s)
+echo "Build completed in $((end_time - start_time)) seconds"
 ```
 
 Key options explained:
 
 - **--load**: Imports the built image into your local Docker image store
-- **--platform**: Specifies the target platform architecture
 - **-t rent-a-room**: Tags the image with the name "rent-a-room"
 
-### **Step 5: Verify Your Image**
+### **6. Verify Your Image**
 
-Wait for step 4 to finish building, then check that your image was built successfully:
+Wait for step 5 to finish building, then check that your image was built successfully:
 
 ```bash
 docker images | grep rent-a-room
@@ -203,21 +270,24 @@ If built successfully you will see output like this:
 rent-a-room     latest            0b9c31de0251   3 seconds ago    111MB
 ```
 
-### **Step 6: Run the Container**
+### **7. Run the Container**
 
 Start a container using the image you built:
 
 ```bash
+# Stop and remove container if it exists, then create a new one
+docker stop rent-a-room-container 2>/dev/null || true
+docker rm rent-a-room-container 2>/dev/null || true
 docker run -d -p 3000:80 --name rent-a-room-container rent-a-room
 ```
 
-### **Step 7: Test the Application**
+### **8. Test the Application**
 
 Access your application in a web browser at `http://localhost:3000`.
 You should see the Rent-A-Room application running.
 ![Docker](/images/docker-frontend-built.png)
 
-### **Step 8: Explore Build Acceleration**
+### **9. Explore Build Acceleration**
 
 Make a small change with the application like this:
 
@@ -226,27 +296,33 @@ Make a small change with the application like this:
 echo "// Small change" >> src/App.js
 ```
 
-Then time the cloud build
+Then time the cloud build:
 
 ```bash
 # Run the cloud build and time the building
-time docker buildx build --load --platform linux/amd64 -t rent-a-room .
+start_time=$(date +%s)
+docker buildx build --load -t rent-a-room .
+end_time=$(date +%s)
+echo "Build completed in $((end_time - start_time)) seconds"
 ```
 
-### **(Optional)Step 9: Advanced: Enable Remote Caching**
+### **10. (Optional) Enable Remote Caching**
 
-For even faster builds, especially in CI/CD environments, you could try something like below:
+For even faster builds, especially in CI/CD environments:
 
 ```bash
-# Replace USERNAME with your Docker Hub username
+# Replace with your Docker Hub username (requires Docker Hub account)
+# You must be logged in with 'docker login' first
+YOUR_DOCKERHUB_USERNAME="your-username-here"  # Change this to your username
+
 docker buildx build \
-  --cache-to type=registry,ref=USERNAME/rent-a-room-cache \
-  --cache-from type=registry,ref=USERNAME/rent-a-room-cache \
-  --load --platform linux/amd64 \
+  --cache-to type=registry,ref=$YOUR_DOCKERHUB_USERNAME/rent-a-room-cache \
+  --cache-from type=registry,ref=$YOUR_DOCKERHUB_USERNAME/rent-a-room-cache \
+  --load \
   -t rent-a-room .
 ```
 
-### **Step 10: Stop and Remove the Application Container**
+### **11. Stop and Remove the Application Container**
 
 To stop the running container:
 
