@@ -193,9 +193,13 @@ sed -i 's/<Router>/<Router basename={basename}>/' src/App.js
 
 # Update package.json to add homepage
 sed -i '/"private": true,/a\  "homepage": ".",' package.json
+
+# Update App.js to add basename to Router
+sed -i 's/<Router>/<Router basename="\/proxy\/3000">/' src/App.js
 ```
 
 ---
+
 
 ### 4. Build the Docker Image
 

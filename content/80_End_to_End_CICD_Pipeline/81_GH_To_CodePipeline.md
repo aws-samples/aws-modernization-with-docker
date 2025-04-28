@@ -77,34 +77,67 @@ echo "GitHub Repository: $GITHUB_REPO"
 echo "GitHub Branch: $GITHUB_BRANCH"
 ```
 
-### 4️⃣ Download and Deploy CloudFormation with GitHub Connection
+### 4️⃣ Create the buildspec.yml File
 
-First, download the CloudFormation template:
-
-```bash
-# Download the ECS pipeline setup template
-curl -O https://raw.githubusercontent.com/aws-samples/aws-modernization-with-docker/main/static/infrastructure/ecs-pipeline-setup.yaml
-```
-
-After authorization and retrieving your GitHub username, deploy your CloudFormation stack:
+Now, let's create the buildspec.yml file that will be used by AWS CodeBuild to build our Docker images with multi-architecture support:
 
 ```bash
-# Source the connection config file to get the CONNECTION_ARN
-source connection-config.sh
+cat << 'EOF' > buildspec.yml
+version: 0.2
 
-# Verify the connection ARN is available
-echo "Using connection ARN: $CONNECTION_ARN"
+env:
+  secrets-manager:
+    DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
+    DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
 
-# Deploy the CloudFormation stack
-aws cloudformation deploy --template-file ecs-pipeline-setup.yaml --stack-name ECSPipelineStack \
---parameter-overrides \
-GitHubOwner="$GITHUB_USERNAME" \
-GitHubRepo="$GITHUB_REPO" \
-GitHubBranch="$GITHUB_BRANCH" \
-CodeStarConnectionArn="$CONNECTION_ARN" \
-ECSClusterName="rent-a-room-cluster" \
-ECSServiceName="rent-a-room-service" \
---capabilities CAPABILITY_NAMED_IAM
+phases:
+  pre_build:
+    commands:
+      # Print Docker version for debugging
+      - docker --version
+      - echo Logging in to Docker Hub...
+      - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+      
+      # Install Docker Buildx
+      - echo Installing Docker Buildx...
+      - export DOCKER_BUILDX_VERSION=v0.11.2
+      - mkdir -p ~/.docker/cli-plugins
+      - curl -sSL https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-amd64 -o ~/.docker/cli-plugins/docker-buildx
+      - chmod +x ~/.docker/cli-plugins/docker-buildx
+      - docker buildx version
+      
+      # Set up Docker Buildx
+      - docker buildx create --name mybuilder --use
+      - docker buildx inspect --bootstrap
+      
+      # Capturing build info
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo Build started on `date`
+      - echo Building image with tag $IMAGE_TAG
+      
+      # Enable BuildKit
+      - export DOCKER_BUILDKIT=1
+  
+  build:
+    commands:
+      - echo Building Docker image for ARM64 architecture using Buildx...
+      - docker buildx build --platform linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest -t $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --load .
+  
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing Docker image to Docker Hub...
+      - docker push $DOCKER_USERNAME/rent-a-room:latest
+      - docker push $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"rent-a-room","imageUri":"%s/rent-a-room:%s"}]' $DOCKER_USERNAME $IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+EOF
 ```
 
 ## 🔍 How It Works
