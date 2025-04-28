@@ -113,7 +113,7 @@ RUN npm run build
 - **COPY . .**: Copies the rest of the application code into the container.
 - **RUN npm run build**: Builds the application (typically creating a build or dist folder).
 
-##### Build Stage
+##### Production Stage
 
 ```bash
 # Production stage
@@ -193,9 +193,6 @@ sed -i 's/<Router>/<Router basename={basename}>/' src/App.js
 
 # Update package.json to add homepage
 sed -i '/"private": true,/a\  "homepage": ".",' package.json
-
-# Update App.js to add basename to Router
-sed -i 's/<Router>/<Router basename="\/proxy\/3000">/' src/App.js
 ```
 
 ---

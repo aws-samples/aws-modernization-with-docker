@@ -180,7 +180,7 @@ Driver:        docker-container
 Build the image using Docker Build Cloud:
 
 ```bash
-docker buildx build --load --platform linux/amd64 -t rent-a-room .
+docker buildx build --load --platform linux/arm64 -t rent-a-room .
 ```
 
 Key options explained:
