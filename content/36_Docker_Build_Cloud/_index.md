@@ -286,9 +286,11 @@ docker run -d -p 3000:80 --name rent-a-room-container rent-a-room
 
 ### **8. Test the Application**
 
-Access your application in a web browser at `http://localhost:3000`.
-You should see the Rent-A-Room application running.
-![Docker](/images/docker-frontend-built.png)
+Access your application in VS Code Server by going to the **PORTS** section, and click on the **_Forwarded Address_**.
+![Docker](/images/VSCode_PORTS.png)
+
+This is what the application will look like:
+![Docker](/images/docker-frontend-built-cropped.png)
 
 ### **9. Explore Build Acceleration**
 

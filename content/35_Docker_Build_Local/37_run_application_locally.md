@@ -25,11 +25,13 @@ This command:
 - Assigns the container the name `rent-a-room-container`.
 - Uses the **built image** `rent-a-room`.
 
-
 ### **Test the Application in a Browser**
 
 There will be a popup which will say "Your application running on port 3000 is available."
 Click the "Open in Browser" Button.
+
+If no popup, you can also access the application via the **PORTS** section and click on the **_Forwarded Address_**.
+![Docker](/images/VSCode_PORTS.png)
 
 ---
 
@@ -49,6 +51,7 @@ List all running containers:
 ```sh
 docker ps
 ```
+
 Check the logs for the container:
 
 ```sh
