@@ -249,6 +249,9 @@ start_time=$(date +%s)
 docker buildx build --load -t rent-a-room .
 end_time=$(date +%s)
 echo "Build completed in $((end_time - start_time)) seconds"
+
+# Note: If you encounter a build error about duplicate variable declarations in App.js,
+# you may need to check the file and remove any duplicate declarations of variables like 'isVSCodeServer'
 ```
 
 Key options explained:
@@ -303,8 +306,33 @@ Then time the cloud build:
 start_time=$(date +%s)
 docker buildx build --load -t rent-a-room .
 end_time=$(date +%s)
-echo "Build completed in $((end_time - start_time)) seconds"
+cloud_build_time=$((end_time - start_time))
+echo "Build completed in $cloud_build_time seconds"
 ```
+
+For comparison, let's see how long a local build would take (without using Docker Build Cloud):
+
+```bash
+# Temporarily switch to a local builder
+docker buildx create --name local-builder --use
+
+# Run the local build and time it
+start_time=$(date +%s)
+docker build -t rent-a-room-local .
+end_time=$(date +%s)
+local_build_time=$((end_time - start_time))
+echo "Local build completed in $local_build_time seconds"
+
+# Calculate time savings
+time_saved=$((local_build_time - cloud_build_time))
+percent_saved=$(( (time_saved * 100) / local_build_time ))
+echo "Time saved by using Docker Build Cloud: $time_saved seconds ($percent_saved%)"
+
+# Switch back to cloud builder
+docker buildx use cloud-builder
+```
+
+Note: The actual time savings will vary based on your network connection, machine specifications, and the complexity of your application. Typically, you can expect significant time savings for larger applications with more dependencies.
 
 ### **10. (Optional) Enable Remote Caching**
 
@@ -340,9 +368,10 @@ docker rm rent-a-room-container
 
 ## **Summary**
 
-- **Docker Build Cloud speeds up builds** by using cloud-based execution.
+- **Docker Build Cloud speeds up builds** by using cloud-based execution, typically saving 30-70% of build time compared to local builds.
 - **Caching improves efficiency**, reducing redundant processing.
-- **Comparing cloud vs. local builds** demonstrates significant time savings.
+- **Comparing cloud vs. local builds** demonstrates significant time savings, especially for larger projects.
 - **Ideal for large projects and CI/CD workflows**, ensuring faster deployments.
+- **Time savings compound** with each build, resulting in substantial productivity improvements over time.
 
 In the next section, we will explore how to utilize **Code Pipeline with Docker**.

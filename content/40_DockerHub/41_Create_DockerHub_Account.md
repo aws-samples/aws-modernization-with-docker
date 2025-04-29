@@ -11,6 +11,7 @@ In this section, you'll create a Docker Hub account which we'll use to store our
 ## Why Docker Hub?
 
 Docker Hub is a cloud-based registry service that allows you to:
+
 - Store your container images
 - Share your images with others
 - Pull official images
@@ -39,13 +40,11 @@ For secure CLI access:
 
 ![Docker Settings](/images/dockerhub-settings.png)
 
-3. Select "Account Settings"
-4. Go to "Security"
-5. Click "Personal Access Tokens"
+3. Click [Personal Access Tokens](https://app.docker.com/settings/personal-access-tokens)
 
 ![Token Creation](/images/token-creation.png)
 
-6. Configure your token:
+4. Configure your token:
    - Name: "Docker Workshop Access"
    - Expiration Date: This is up to you!
    - Access permissions: Read & Write
@@ -58,6 +57,7 @@ For secure CLI access:
 ## ✅ Verification
 
 Ensure your account is ready:
+
 1. Verify your email if required
 2. Log in to Docker Hub website
 3. Check you can see your account settings
@@ -65,6 +65,7 @@ Ensure your account is ready:
 ## 🎯 Next Steps
 
 In the next section, we'll:
+
 1. Log in to Docker Hub from the CLI
 2. Learn how to tag images
 3. Push our first image
