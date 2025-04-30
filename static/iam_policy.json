@@ -13,7 +13,8 @@
         "cloudformation:GetTemplateSummary",
         "cloudformation:ValidateTemplate",
         "cloudformation:CreateUploadBucket",
-        "cloudformation:ListStacks"
+        "cloudformation:ListStacks",
+        "cloudformation:CreateChangeSet"
       ],
       "Resource": "*"
     },
