@@ -1,7 +1,7 @@
 ---
 title: "Docker Hub Overview"
 chapter: true
-weight: 40
+weight: 31
 ---
 
 # Docker Hub Integration

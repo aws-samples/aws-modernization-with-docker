@@ -55,7 +55,7 @@ RUN npm run build
 
 # Production stage
 # Using a more recent Alpine version with fewer vulnerabilities
-FROM nginx:1.25-alpine3.18
+FROM nginx:stable-alpine
 
 # Copy the build output to replace the default nginx contents
 COPY --from=build /app/build /usr/share/nginx/html
@@ -125,8 +125,10 @@ These vulnerabilities represent the reality of container security - there's ofte
 Let's compare the vulnerability scan results between the vulnerable and fixed images:
 
 ```bash
-docker scout compare vulnerable-app:latest fixed-app:latest
+docker scout compare vulnerable-app:latest --to fixed-app:latest
 ```
+
+![Scout Results](/images/Scout-Comparison.png)
 
 This will show you a side-by-side comparison of vulnerabilities that were remediated.
 

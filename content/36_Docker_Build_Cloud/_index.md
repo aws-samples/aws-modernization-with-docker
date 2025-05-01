@@ -1,7 +1,7 @@
 ---
 title: "Build with Docker Build Cloud"
 chapter: true
-weight: 34
+weight: 36
 ---
 
 ## **Docker Build Cloud: Overview**
@@ -24,10 +24,7 @@ For subscription details, visit [Docker Pricing](https://www.docker.com/pricing/
 
 - Install **Docker Desktop**: [Download here](https://www.docker.com/get-started/)
 - Ensure **Docker Desktop is running**
-- Log in to **Docker Hub** (if not logged already via Docker Desktop):
-  ```sh
-  docker login
-  ```
+- **Docker Hub authentication** completed in the previous section
 - Enable Docker Build Cloud in Docker Desktop (paid feature)
   - Open **Docker Desktop**
   - Go to **Settings > Features in Development**
@@ -336,23 +333,60 @@ docker buildx use cloud-builder
 
 Note: The actual time savings will vary based on your network connection, machine specifications, and the complexity of your application. Typically, you can expect significant time savings for larger applications with more dependencies.
 
-### **10. (Optional) Enable Remote Caching**
+### **10. Enable Remote Caching**
 
-For even faster builds, especially in CI/CD environments:
+For even faster builds, especially in CI/CD environments, let's use your Docker Hub account for remote caching:
 
 ```bash
-# Replace with your Docker Hub username (requires Docker Hub account)
-# You must be logged in with 'docker login' first
-YOUR_DOCKERHUB_USERNAME="your-username-here"  # Change this to your username
+# Use your Docker Hub username from the environment variable
+echo "Using Docker Hub username: $DOCKER_USERNAME"
 
 docker buildx build \
-  --cache-to type=registry,ref=$YOUR_DOCKERHUB_USERNAME/rent-a-room-cache \
-  --cache-from type=registry,ref=$YOUR_DOCKERHUB_USERNAME/rent-a-room-cache \
+  --cache-to type=registry,ref=$DOCKER_USERNAME/rent-a-room-cache \
+  --cache-from type=registry,ref=$DOCKER_USERNAME/rent-a-room-cache \
   --load \
   -t rent-a-room .
 ```
 
-### **11. Stop and Remove the Application Container**
+### **11. Push Your Image to Docker Hub**
+
+Now that you've built your image with Docker Build Cloud, let's push it to Docker Hub:
+
+```bash
+# Tag the image with your Docker Hub username
+docker tag rent-a-room $DOCKER_USERNAME/rent-a-room:cloud
+
+# Push the image to Docker Hub
+docker push $DOCKER_USERNAME/rent-a-room:cloud
+```
+
+#### **Verify the Tagged Image Locally**
+
+Check that your image has been tagged correctly:
+
+```bash
+docker images | grep rent-a-room
+```
+
+You should see both your local image and the tagged image ready for Docker Hub:
+
+```bash
+$DOCKER_USERNAME/rent-a-room   cloud     0b9c31de0251   5 minutes ago   111MB
+rent-a-room                    latest    0b9c31de0251   5 minutes ago   111MB
+```
+
+#### **Verify the Image on Docker Hub**
+
+After pushing, you can verify that your image is available on Docker Hub by visiting:
+```
+https://hub.docker.com/r/YOUR-USERNAME/rent-a-room
+```
+
+Or by navigating to Docker Hub in your browser and checking your repositories.
+
+![Docker Hub Repository](/images/docker-hub-repo.png)
+
+### **12. Stop and Remove the Application Container**
 
 To stop the running container:
 
@@ -375,5 +409,6 @@ docker rm rent-a-room-container
 - **Comparing cloud vs. local builds** demonstrates significant time savings, especially for larger projects.
 - **Ideal for large projects and CI/CD workflows**, ensuring faster deployments.
 - **Time savings compound** with each build, resulting in substantial productivity improvements over time.
+- **Pushing to Docker Hub** makes your images available anywhere.
 
 In the next section, we will explore how to utilize **Code Pipeline with Docker**.

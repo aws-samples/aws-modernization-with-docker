@@ -1,7 +1,7 @@
 ---
 title: "Docker Hub CLI Authentication"
 chapter: true
-weight: 42
+weight: 33
 ---
 
 # 🔐 Docker Hub CLI Authentication
@@ -70,4 +70,4 @@ aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query Se
 Now that credentials are securely stored:
 1. **AWS CodePipeline will retrieve them during builds.**  
 2. **No need to manually enter Docker credentials again!**  
-3. **Move to the next section** to automate Docker builds in AWS CodePipeline. 🚀
+3. **Choose your Docker build method** in the next section. 🚀

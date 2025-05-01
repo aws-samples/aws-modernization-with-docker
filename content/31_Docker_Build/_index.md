@@ -1,12 +1,12 @@
 ---
 title: "Build with Docker"
 chapter: true
-weight: 30
+weight: 34
 ---
 
 # Getting Started
 
-Want to skip the introduction? Choose your preferred Docker build method to continue:
+Now that you've set up your Docker Hub account and authentication, choose your preferred Docker build method to continue:
 
 - [Run the workshop with Docker Build Local](../35_Docker_Build_Local/)
 - [Run the workshop with Docker Build Cloud](../36_Docker_Build_Cloud/)
@@ -65,4 +65,3 @@ Select which Docker build approach you'd like to use:
 
 - **[Continue with Docker Build Local](../35_Docker_Build_Local/)** - The traditional approach using your local machine resources (free, works offline)
 - **[Switch to Docker Build Cloud](../36_Docker_Build_Cloud/)** - The cloud-based approach for faster builds (requires paid subscription or using free trial)
-
