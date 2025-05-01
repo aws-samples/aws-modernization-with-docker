@@ -47,9 +47,22 @@ The final authorization step must be completed in the AWS Console:
 1. Navigate to the [Developer Tools > Connections](https://console.aws.amazon.com/codesuite/settings/connections) section in the AWS Console
 2. Locate your **newly created connection** (named "my-github-connection")
 3. Click **"Update pending connection"**
-4. Follow the prompts to **authenticate with GitHub**
-5. **IMPORTANT:** When asked which repositories to connect, select the specific "Rent-A-Room" repository you forked (`your-github-username/Rent-A-Room`) instead of granting access to all repositories
-6. Once completed, the status should change to **`Available`**
+4. You will be prompted to sign into your GitHub account
+5. **IMPORTANT:** After signing in, make sure to click on **"Install a new app"**
+
+![Install a new GitHub app](/images/install-new-app.png)
+
+6. You will be prompted to sign into GitHub again
+7. On the installation page, you can choose between:
+   - All repositories in your GitHub account
+   - Only select repositories (recommended)
+8. Select **"Only select repositories"** and click the dropdown
+9. Search for the "Rent-A-Room" repository you forked
+10. Select the repository and click **"Install and authorize"**
+
+![Select repository](/images/select-repository.png)
+
+11. Once completed, you'll be redirected back to AWS and the connection status should change to **`Available`**
 
 ![CodeStar Connection](/images/codestar-connection.png)
 
