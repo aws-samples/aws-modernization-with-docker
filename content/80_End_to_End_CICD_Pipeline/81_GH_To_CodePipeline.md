@@ -100,7 +100,7 @@ Before we deploy our pipeline, we need to create and push a Dockerfile and relat
 cd /workshop/Rent-A-Room
 
 # Commit and push all files to GitHub
-git add Dockerfile nginx/ buildspec.yml .dockerignore
+git add Dockerfile
 git commit -m "Add Docker configuration files for CI/CD pipeline"
 git push origin main
 
