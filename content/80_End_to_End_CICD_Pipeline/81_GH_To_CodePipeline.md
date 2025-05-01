@@ -118,18 +118,35 @@ curl -s -f https://raw.githubusercontent.com/aws-samples/aws-modernization-with-
 # Verify the template was downloaded correctly with more robust checking
 if [ -s ecs-pipeline-setup.yaml ]; then
   echo "✅ Template downloaded successfully. Verifying content..."
-  grep -q "AWSTemplateFormatVersion" ecs-pipeline-setup.yaml && echo "✅ Template validation passed" || echo "❌ Template validation failed"
+  grep -q "AWSTemplateFormatVersion" ecs-pipeline-setup.yaml && echo " ✅Template validation passed" || echo "❌ Template validation failed"
 else
   echo "❌ Template download failed or file is empty"
   exit 1
 fi
 
 # Create Docker Hub credentials in Secrets Manager
-echo "Creating Docker Hub credentials in Secrets Manager..."
-aws secretsmanager create-secret \
+echo "Checking for existing Docker Hub credentials in Secrets Manager..."
+if ! aws secretsmanager describe-secret --secret-id dockerhub-credentials &>/dev/null; then
+  echo "Docker Hub credentials secret not found. Creating new secret..."
+  
+  # Check if environment variables are set
+  if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_TOKEN" ]]; then
+    echo "Docker Hub environment variables not set."
+    read -p "Enter your Docker Hub username: " DOCKER_USERNAME
+    read -s -p "Enter your Docker Hub token: " DOCKER_TOKEN
+    echo
+  fi
+  
+  # Create the secret with the provided credentials
+  aws secretsmanager create-secret \
     --name dockerhub-credentials \
     --description "Docker Hub credentials for CI/CD pipeline" \
-    --secret-string "{\"DOCKER_USERNAME\":\"your-dockerhub-username\",\"DOCKER_TOKEN\":\"your-dockerhub-token\"}" || echo "⚠️ Secret may already exist or there was an error"
+    --secret-string "{\"DOCKER_USERNAME\":\"$DOCKER_USERNAME\",\"DOCKER_TOKEN\":\"$DOCKER_TOKEN\"}"
+  
+  echo "✅ Docker Hub credentials secret created successfully"
+else
+  echo "✅ Docker Hub credentials secret already exists"
+fi
 
 # Deploy the CloudFormation stack with progress feedback
 echo "Deploying CloudFormation stack..."
