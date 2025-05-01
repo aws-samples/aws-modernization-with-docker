@@ -36,6 +36,7 @@ echo "export CONNECTION_ARN=$CONNECTION_ARN" > connection-config.sh
 ```
 
 **✅ Expected Output:**
+
 ```
 arn:aws:codestar-connections:us-west-2:123456789012:connection/your-connection-id
 ```
@@ -90,68 +91,82 @@ echo "GitHub Repository: $GITHUB_REPO"
 echo "GitHub Branch: $GITHUB_BRANCH"
 ```
 
-### 4️⃣ Create the buildspec.yml File
+### 4️⃣ Create and Push Dockerfile and Required Files
 
-Now, let's create the buildspec.yml file that will be used by AWS CodeBuild to build our Docker images with multi-architecture support:
+Before we deploy our pipeline, we need to create and push a Dockerfile and related configuration files to our GitHub repository.
 
 ```bash
-cat << 'EOF' > buildspec.yml
-version: 0.2
+# Make sure you are in the Rent-A-Room directory
+cd /workshop/Rent-A-Room
 
-env:
-  secrets-manager:
-    DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
-    DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+# Commit and push all files to GitHub
+git add Dockerfile nginx/ buildspec.yml .dockerignore
+git commit -m "Add Docker configuration files for CI/CD pipeline"
+git push origin main
 
-phases:
-  pre_build:
-    commands:
-      # Print Docker version for debugging
-      - docker --version
-      - echo Logging in to Docker Hub...
-      - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
-      
-      # Install Docker Buildx
-      - echo Installing Docker Buildx...
-      - export DOCKER_BUILDX_VERSION=v0.11.2
-      - mkdir -p ~/.docker/cli-plugins
-      - curl -sSL https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-amd64 -o ~/.docker/cli-plugins/docker-buildx
-      - chmod +x ~/.docker/cli-plugins/docker-buildx
-      - docker buildx version
-      
-      # Set up Docker Buildx
-      - docker buildx create --name mybuilder --use
-      - docker buildx inspect --bootstrap
-      
-      # Capturing build info
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo Build started on `date`
-      - echo Building image with tag $IMAGE_TAG
-      
-      # Enable BuildKit
-      - export DOCKER_BUILDKIT=1
-  
-  build:
-    commands:
-      - echo Building Docker image for ARM64 architecture using Buildx...
-      - docker buildx build --platform linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest -t $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --load .
-  
-  post_build:
-    commands:
-      - echo Build completed on `date`
-      - echo Pushing Docker image to Docker Hub...
-      - docker push $DOCKER_USERNAME/rent-a-room:latest
-      - docker push $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
-      - echo Writing image definitions file...
-      - printf '[{"name":"rent-a-room","imageUri":"%s/rent-a-room:%s"}]' $DOCKER_USERNAME $IMAGE_TAG > imagedefinitions.json
-      - cat imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
-EOF
+echo "✅ Successfully pushed Dockerfile and configuration files to GitHub repository"
 ```
+
+### 5️⃣ Download and Deploy the CloudFormation Template
+
+Now, let's download and deploy the CloudFormation template that will set up our complete CI/CD pipeline:
+
+```bash
+# Download the CloudFormation template using curl with better error handling
+curl -s -f https://raw.githubusercontent.com/aws-samples/aws-modernization-with-docker/main/static/infrastructure/ecs-pipeline-setup.yaml -o ecs-pipeline-setup.yaml || { echo "Failed to download template"; exit 1; }
+
+# Verify the template was downloaded correctly with more robust checking
+if [ -s ecs-pipeline-setup.yaml ]; then
+  echo "✅ Template downloaded successfully. Verifying content..."
+  grep -q "AWSTemplateFormatVersion" ecs-pipeline-setup.yaml && echo "✅ Template validation passed" || echo "❌ Template validation failed"
+else
+  echo "❌ Template download failed or file is empty"
+  exit 1
+fi
+
+# Create Docker Hub credentials in Secrets Manager
+echo "Creating Docker Hub credentials in Secrets Manager..."
+aws secretsmanager create-secret \
+    --name dockerhub-credentials \
+    --description "Docker Hub credentials for CI/CD pipeline" \
+    --secret-string "{\"DOCKER_USERNAME\":\"your-dockerhub-username\",\"DOCKER_TOKEN\":\"your-dockerhub-token\"}" || echo "⚠️ Secret may already exist or there was an error"
+
+# Deploy the CloudFormation stack with progress feedback
+echo "Deploying CloudFormation stack..."
+aws cloudformation deploy \
+  --template-file ecs-pipeline-setup.yaml \
+  --stack-name docker-workshop-pipeline \
+  --parameter-overrides \
+    GitHubOwner=$GITHUB_USERNAME \
+    GitHubRepo=$GITHUB_REPO \
+    GitHubBranch=$GITHUB_BRANCH \
+    CodeStarConnectionArn=$CONNECTION_ARN \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --region us-east-1 \
+  --no-fail-on-empty-changeset
+
+# Check the deployment status with improved output formatting
+echo "Checking deployment status..."
+STATUS=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].StackStatus" --output text)
+echo "Stack status: $STATUS"
+
+if [ "$STATUS" == "CREATE_COMPLETE" ] || [ "$STATUS" == "UPDATE_COMPLETE" ]; then
+  echo "✅ Deployment successful!"
+
+  # Get the pipeline URL for easier access
+  PIPELINE_NAME=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].Outputs[?OutputKey=='PipelineName'].OutputValue" --output text)
+  echo "🔗 Pipeline URL: https://console.aws.amazon.com/codepipeline/home?region=us-east-1#/view/$PIPELINE_NAME"
+else
+  echo "⚠️ Deployment status: $STATUS - Check the AWS Console for more details"
+fi
+```
+
+This CloudFormation template will automatically create:
+
+- A CodeBuild project with the appropriate buildspec configuration
+- A CodePipeline with Source, Build, and Deploy stages
+- All necessary IAM roles and permissions
+- An ECS cluster and service for deployment
 
 ## 🔍 How It Works
 
@@ -166,13 +181,14 @@ EOF
 If you encounter issues:
 
 - **Lost Connection ARN**: If you lose your terminal session or the CONNECTION_ARN variable, you can retrieve it with:
+
   ```bash
   # List all connections
   aws codestar-connections list-connections --query "Connections[?ConnectionName=='my-github-connection'].ConnectionArn" --output text
-  
+
   # Save it to the variable again
   CONNECTION_ARN=$(aws codestar-connections list-connections --query "Connections[?ConnectionName=='my-github-connection'].ConnectionArn" --output text)
-  
+
   # Update the config file
   echo "export CONNECTION_ARN=$CONNECTION_ARN" > connection-config.sh
   ```
@@ -188,8 +204,9 @@ If you encounter issues:
 🚀 **Step 1:** Create a GitHub CodeStar Connection via AWS CLI and save ARN to variable  
 🔗 **Step 2:** Authorize the connection manually in AWS Console, selecting only the "Rent-A-Room" repository  
 🔍 **Step 3:** Automatically retrieve your GitHub username using GitHub CLI  
-📦 **Step 4:** Deploy CloudFormation with your GitHub information and connection ARN
+📄 **Step 4:** Create and push Dockerfile and configuration files to your GitHub repository  
+📦 **Step 5:** Deploy CloudFormation with your GitHub information and connection ARN
 
 This approach ensures secure authentication between AWS CodePipeline and GitHub without storing OAuth tokens manually, following AWS security best practices.
 
-In the next section, we'll configure the Docker Build Cloud integration with CodePipeline to automate our container builds.
+In the next section, we'll understand how our CI/CD pipeline is configured to integrate Docker Build Cloud, Docker Scout, and Amazon ECS deployment.
