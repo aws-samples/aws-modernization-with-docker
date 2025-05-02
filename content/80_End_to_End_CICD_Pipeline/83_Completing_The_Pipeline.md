@@ -8,17 +8,6 @@ weight: 83
 
 Congratulations! You've successfully set up the AWS CodePipeline infrastructure with CloudFormation. Now let's make it come alive by triggering the pipeline and watching the entire workflow in action.
 
-## 🔄 Pipeline Overview
-
-Our complete pipeline includes these stages:
-
-1. **Source**: Pull code from GitHub repository
-2. **Build**: Build multi-architecture Docker images with Docker Build Cloud
-3. **Security Scan**: Analyze images with Docker Scout
-4. **Deploy**: Deploy to Amazon ECS
-
-![complete-pipeline](/images/complete-pipeline.png)
-
 ## 🚀 The Power of GitOps and DevOps with AWS and Docker
 
 Before we start making changes to our application, let's understand why CI/CD pipelines are so valuable in modern software development:
@@ -615,6 +604,32 @@ Once the pipeline completes, verify the updated room listings by accessing your 
 echo "✅ Application URL: http://$PUBLIC_IP/rooms"
 ```
 
+## 🚢 Verifying ECS Deployment
+
+After the pipeline completes, verify your application is running on Amazon ECS:
+
+```bash
+# Get the task URL (public IP of the ECS task)
+TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
+TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
+ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
+PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+
+# Check if we got a valid IP
+if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "None" ]; then
+  echo "✅ Application URL: http://$PUBLIC_IP"
+  echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+else
+  echo "⚠️ Could not retrieve task public IP. Using task details instead."
+  # Alternative approach: Get the task details and print them
+  TASK_ID=$(echo $TASK_ARN | awk -F'/' '{print $NF}')
+  echo "Task ID: $TASK_ID"
+  echo "Check the task details in the AWS Console: https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/rent-a-room-cluster/tasks/$TASK_ID/details"
+fi
+```
+
+Visit the application URL to see your deployed application with the enhanced UI from both teams!
+
 ### 📸 Room Listings Transformation
 
 Let's see the impact of the Room Listings team's changes:
@@ -626,6 +641,61 @@ Let's see the impact of the Room Listings team's changes:
 *After: Modern card-based design with images, amenity tags, and improved visual hierarchy*
 
 The Room Listings team has successfully transformed the browsing experience, making it easier for users to find and compare rooms that meet their needs.
+
+### 🛡️ Optional: Security Gates with Docker Scout
+
+In our pipeline, we've already implemented Docker Scout security scanning, but let's explore how it's acting as a security gate to prevent vulnerable images from being deployed to production.
+
+The current CodeBuild project for Docker Scout includes this important configuration:
+
+```yaml
+build:
+  commands:
+    - echo Running Docker Scout security scan using container image...
+    - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
+    # Run Docker Scout with security gates
+    - >
+      docker run --rm 
+      -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
+      -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+      docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --exit-code --only-severity critical,high
+    - echo "No critical or high vulnerabilities found. Scan passed!"
+```
+
+The key parameter is `--exit-code --only-severity critical,high`, which causes the command to:
+1. Return exit code (failure) if vulnerabilities are found
+2. Only consider critical and high severity vulnerabilities
+
+This is a security gate that prevents images with serious vulnerabilities from proceeding through the pipeline to deployment.
+
+#### Testing the Security Gate
+
+To see how this security gate works in practice, you could use the vulnerable Dockerfile we created earlier in the Docker Scout section:
+
+```bash
+# Navigate to your repository
+cd /workshop/Rent-A-Room
+
+# Test the security gate locally
+docker scout cves $DOCKER_USERNAME/rent-a-room:vulnerable --exit-code --only-severity critical,high
+```
+
+This command will likely fail if it was ran through the pipeline with a non-zero exit code due to the vulnerabilities in the older Node.js and Nginx versions used in the vulnerable Dockerfile.
+
+If you were to modify your pipeline to deploy this vulnerable image, the security scan stage would fail, preventing the vulnerable image from being deployed to your ECS cluster.
+
+#### Customizing Security Gates
+
+You can customize the security gates based on your organization's risk tolerance:
+- `--only-severity critical` - Only fail on critical vulnerabilities
+- `--only-severity critical,high` - Fail on critical and high vulnerabilities
+- `--only-severity critical,high,medium` - Stricter policy that fails on medium vulnerabilities too
+
+By implementing security gates, you ensure that security is an integral part of your CI/CD process, not just an afterthought.
+
+![docker-scout-results](/images/docker-scout-results.png)
+
+Docker Scout provides security scanning as part of the CI/CD pipeline, ensuring that vulnerabilities are caught before deployment. The security report is stored as an artifact in the pipeline, allowing you to review it at any time.
 
 ## 🔍 Examining Docker Scout Results
 
@@ -674,90 +744,6 @@ You can also view the results directly in the Docker Scout dashboard:
 
 ![docker-scout-results](/images/docker-scout-results.png)
 
-### 🛡️ Optional: Security Gates with Docker Scout
-
-In our pipeline, we've already implemented Docker Scout security scanning, but let's explore how it's acting as a security gate to prevent vulnerable images from being deployed to production.
-
-The current CodeBuild project for Docker Scout includes this important configuration:
-
-```yaml
-build:
-  commands:
-    - echo Running Docker Scout security scan using container image...
-    - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
-    # Run Docker Scout with security gates
-    - >
-      docker run --rm 
-      -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-      -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
-      docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --exit-code --only-severity critical,high
-    - echo "No critical or high vulnerabilities found. Scan passed!"
-```
-
-The key parameter is `--exit-code 1 --only-severity critical,high`, which causes the command to:
-1. Return exit code 1 (failure) if vulnerabilities are found
-2. Only consider critical and high severity vulnerabilities
-
-This is a security gate that prevents images with serious vulnerabilities from proceeding through the pipeline to deployment.
-
-#### Testing the Security Gate
-
-To see how this security gate works in practice, you could use the vulnerable Dockerfile we created earlier in the Docker Scout section:
-
-```bash
-# Navigate to your repository
-cd /workshop/Rent-A-Room
-
-# Build and push the vulnerable image with a special tag
-docker build -t $DOCKER_USERNAME/rent-a-room:vulnerable -f Dockerfile.vulnerable .
-docker push $DOCKER_USERNAME/rent-a-room:vulnerable
-
-# Test the security gate locally
-docker scout cves $DOCKER_USERNAME/rent-a-room:vulnerable --exit-code --only-severity critical,high
-```
-
-This command will likely fail with a non-zero exit code due to the vulnerabilities in the older Node.js and Nginx versions used in the vulnerable Dockerfile.
-
-If you were to modify your pipeline to deploy this vulnerable image, the security scan stage would fail, preventing the vulnerable image from being deployed to your ECS cluster.
-
-#### Customizing Security Gates
-
-You can customize the security gates based on your organization's risk tolerance:
-- `--only-severity critical` - Only fail on critical vulnerabilities
-- `--only-severity critical,high` - Fail on critical and high vulnerabilities
-- `--only-severity critical,high,medium` - Stricter policy that fails on medium vulnerabilities too
-
-By implementing security gates, you ensure that security is an integral part of your CI/CD process, not just an afterthought.
-
-![docker-scout-results](/images/docker-scout-results.png)
-
-Docker Scout provides security scanning as part of the CI/CD pipeline, ensuring that vulnerabilities are caught before deployment. The security report is stored as an artifact in the pipeline, allowing you to review it at any time.
-
-## 🚢 Verifying ECS Deployment
-
-After the pipeline completes, verify your application is running on Amazon ECS:
-
-```bash
-# Get the task URL (public IP of the ECS task)
-TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
-TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
-ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
-PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
-
-# Check if we got a valid IP
-if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "None" ]; then
-  echo "✅ Application URL: http://$PUBLIC_IP"
-  echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
-else
-  echo "⚠️ Could not retrieve task public IP. Using task details instead."
-  # Alternative approach: Get the task details and print them
-  TASK_ID=$(echo $TASK_ARN | awk -F'/' '{print $NF}')
-  echo "Task ID: $TASK_ID"
-  echo "Check the task details in the AWS Console: https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/rent-a-room-cluster/tasks/$TASK_ID/details"
-fi
-```
-
-Visit the application URL to see your deployed application with the enhanced UI from both teams!
 
 ## 🏢 Real-World Benefits of GitOps and DevOps
 
