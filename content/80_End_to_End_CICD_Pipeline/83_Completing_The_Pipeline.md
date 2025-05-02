@@ -258,7 +258,7 @@ git push origin main
 After pushing your changes, navigate to the AWS CodePipeline console to watch your pipeline execute:
 
 ```
-https://console.aws.amazon.com/codepipeline/home?region=us-east-1#/view/docker-workshop-pipeline
+https://console.aws.amazon.com/codepipeline/home?region=us-east-1
 ```
 
 You'll see the pipeline progress through the Source, Build, Security Scan, and Deploy stages. This demonstrates how changes from the Home Page team flow through the pipeline independently.
@@ -591,7 +591,7 @@ git push origin main
 After pushing your second set of changes, return to the AWS CodePipeline console to watch your pipeline execute again:
 
 ```
-https://console.aws.amazon.com/codepipeline/home?region=us-east-1#/view/docker-workshop-pipeline
+https://console.aws.amazon.com/codepipeline/home?region=us-east-1
 ```
 
 ![pipeline-execution-rooms](/images/pipeline-execution.png)
