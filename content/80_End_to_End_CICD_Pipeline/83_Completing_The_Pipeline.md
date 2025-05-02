@@ -19,13 +19,52 @@ Our complete pipeline includes these stages:
 
 ![complete-pipeline](/images/complete-pipeline.png)
 
-## 🚀 Triggering the Pipeline with a Fun Customization
+## 🚀 The Power of GitOps and DevOps with AWS and Docker
 
-Let's make a meaningful change to our application that will trigger the pipeline. We'll customize the Rent-A-Room application with a personalized workshop completion banner and enhanced UI elements.
+Before we start making changes to our application, let's understand why CI/CD pipelines are so valuable in modern software development:
 
-### 1️⃣ Create a Personalized Change
+### GitOps: Infrastructure as Code
 
-Let's modify the Home component to add a personalized workshop completion banner:
+GitOps is a set of practices that uses Git as the single source of truth for infrastructure and application code. With GitOps:
+
+- All changes are made through pull requests
+- Git provides audit history and rollback capabilities
+- Infrastructure changes are declarative and version-controlled
+- Automated systems ensure the deployed state matches the desired state
+
+### DevOps: Breaking Down Silos
+
+DevOps brings together development and operations teams to deliver software faster and more reliably:
+
+- Shared responsibility for application quality
+- Automated testing and deployment
+- Continuous feedback loops
+- Focus on small, incremental improvements
+
+### Better Together: AWS and Docker
+
+By combining AWS and Docker technologies in our CI/CD pipeline, we get the best of both worlds:
+
+- Docker's containerization simplifies application packaging and deployment
+- AWS's managed services provide scalable, reliable infrastructure
+- Docker Build Cloud enables efficient multi-architecture builds
+- Docker Scout ensures container security is built into the pipeline
+- AWS CodePipeline orchestrates the entire workflow
+
+## 💻 Triggering the Pipeline with Team-Based Iterations
+
+In real-world scenarios, different teams often work on different parts of an application. Let's simulate this by making changes to our Rent-A-Room application in two separate iterations, each focusing on a different component.
+
+### 1️⃣ Iteration 1: Home Page Team's Update
+
+Imagine you're on the Home Page team, responsible for the landing page experience. Your team has received feedback that the current home page is too basic and doesn't effectively communicate the value proposition of the Rent-A-Room service. After a design sprint, your team has decided to implement a modern, visually appealing home page with the following improvements:
+
+- A hero section with a clear value proposition
+- Feature cards highlighting key benefits
+- Improved call-to-action buttons
+- Responsive design for mobile users
+
+As the lead developer on the Home Page team, you've been tasked with implementing these changes and deploying them through the CI/CD pipeline. Here's how you would make these updates:
 
 ```bash
 # Navigate to your existing Rent-A-Room repository that you forked earlier
@@ -219,6 +258,74 @@ cat <<EOF > src/components/home/home.css
 }
 EOF
 
+# Add the files to git and commit
+git add src/components/home/Home.js src/components/home/home.css
+git commit -m "Home Team: Enhance landing page with modern UI and features section"
+git push origin main
+```
+
+### 2️⃣ Monitor First Iteration Pipeline Execution
+
+After pushing your changes, navigate to the AWS CodePipeline console to watch your pipeline execute:
+
+```
+https://console.aws.amazon.com/codepipeline/home?region=us-east-1#/view/docker-workshop-pipeline
+```
+
+You'll see the pipeline progress through the Source, Build, Security Scan, and Deploy stages. This demonstrates how changes from the Home Page team flow through the pipeline independently.
+
+![pipeline-execution-home](/images/pipeline-execution.png)
+
+Once completed, you can verify the changes by accessing your application URL:
+
+```bash
+# Get the task URL (public IP of the ECS task)
+TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
+TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
+ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
+PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+
+echo "✅ Application URL: http://$PUBLIC_IP"
+echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+```
+
+### 📸 Home Page Transformation
+
+Let's see the impact of the Home Page team's changes:
+
+![Home Page Before](/images/home-before.png)
+*Before: Basic home page with minimal styling and features*
+
+![Home Page After](/images/home-after.png)
+*After: Enhanced home page with modern design and feature cards*
+
+The Home Page team has successfully transformed the landing page experience, creating a more engaging and informative entry point for users.
+
+### 3️⃣ Iteration 2: Room Listings Team's Update
+
+Now imagine you're on the Room Listings team, responsible for the room browsing and discovery experience. Your team has been analyzing user behavior data and has identified several pain points in the current room listings page:
+
+- Users can't easily compare different rooms
+- There are no images to help users visualize the spaces
+- Important details like amenities are missing
+- The search functionality is limited
+- The overall design lacks visual appeal
+
+After conducting user interviews and A/B testing, your team has designed a new room listings experience with:
+
+- A card-based layout for easy scanning and comparison
+- High-quality images for each property
+- Prominent pricing information
+- Amenity tags to highlight features
+- An improved search interface
+- Hover effects and animations for better engagement
+
+As a full-stack developer on the Room Listings team, you're implementing these changes independently from the Home Page team's work. The modular architecture and CI/CD pipeline allow both teams to work in parallel without conflicts:
+
+```bash
+# Navigate to your Rent-A-Room repository
+cd /workshop/Rent-A-Room
+
 # Upgrade RoomsList component
 cat <<EOF > src/components/roomslist/RoomsList.js
 import { useState } from "react";
@@ -386,6 +493,7 @@ cat <<EOF > src/components/roomslist/roomslist.css
 
 .room-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
 .room-image {
@@ -484,26 +592,40 @@ cat <<EOF > src/components/roomslist/roomslist.css
 EOF
 
 # Add the files to git and commit
-git add src/components/home/Home.js src/components/home/home.css src/components/roomslist/RoomsList.js src/components/roomslist/roomslist.css src/images
-git commit -m "Add workshop completion banner and enhance UI"
+git add src/components/roomslist/RoomsList.js src/components/roomslist/roomslist.css
+git commit -m "Room Listings Team: Enhance room listings with card design and improved UX"
 git push origin main
 ```
 
-### 2️⃣ Monitor Pipeline Execution
+### 4️⃣ Monitor Second Iteration Pipeline Execution
 
-1. Navigate to the AWS CodePipeline console:
+After pushing your second set of changes, return to the AWS CodePipeline console to watch your pipeline execute again:
 
-   ```
-   https://us-east-1.console.aws.amazon.com/codesuite/codepipeline/pipelines
-   ```
+```
+https://console.aws.amazon.com/codepipeline/home?region=us-east-1#/view/docker-workshop-pipeline
+```
 
-2. Watch as your pipeline progresses through each stage:
-   - **Source**: Pulling your latest code with the enhanced UI
-   - **Build**: Building the Docker image with Docker Build Cloud
-   - **Security Scan**: Scanning the image with Docker Scout
-   - **Deploy**: Deploying to Amazon ECS
+![pipeline-execution-rooms](/images/pipeline-execution.png)
 
-![pipeline-execution](/images/pipeline-execution.png)
+This demonstrates how the Room Listings team can make changes independently of the Home Page team, with both sets of changes flowing through the same pipeline.
+
+Once the pipeline completes, verify the updated room listings by accessing your application URL again:
+
+```bash
+echo "✅ Application URL: http://$PUBLIC_IP"
+```
+
+### 📸 Room Listings Transformation
+
+Let's see the impact of the Room Listings team's changes:
+
+![Rooms Page Before](/images/rooms-before.png)
+*Before: Simple list of rooms with basic information*
+
+![Rooms Page After](/images/rooms-after.png)
+*After: Modern card-based design with images, amenity tags, and improved visual hierarchy*
+
+The Room Listings team has successfully transformed the browsing experience, making it easier for users to find and compare rooms that meet their needs.
 
 ## 🔍 Examining Docker Scout Results
 
@@ -518,23 +640,57 @@ Once the pipeline reaches the Security Scan stage, examine the Docker Scout resu
 
 ![docker-scout-results](/images/docker-scout-results.png)
 
+Docker Scout provides security scanning as part of the CI/CD pipeline, ensuring that vulnerabilities are caught before deployment.
+
 ## 🚢 Verifying ECS Deployment
 
 After the pipeline completes, verify your application is running on Amazon ECS:
 
 ```bash
-# Get the load balancer URL
-LB_URL=$(aws ecs describe-services --cluster rent-a-room-cluster --services rent-a-room-service \
-  --query 'services[0].loadBalancers[0].targetGroupArn' --output text | \
-  xargs -I {} aws elbv2 describe-target-groups --target-group-arns {} \
-  --query 'TargetGroups[0].LoadBalancerArns[0]' --output text | \
-  xargs -I {} aws elbv2 describe-load-balancers --load-balancer-arns {} \
-  --query 'LoadBalancers[0].DNSName' --output text)
+# Get the task URL (public IP of the ECS task)
+TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
+TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
+ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
+PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
 
-echo "✅ Application URL: http://$LB_URL"
+# Check if we got a valid IP
+if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "None" ]; then
+  echo "✅ Application URL: http://$PUBLIC_IP"
+  echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+else
+  echo "⚠️ Could not retrieve task public IP. Using task details instead."
+  # Alternative approach: Get the task details and print them
+  TASK_ID=$(echo $TASK_ARN | awk -F'/' '{print $NF}')
+  echo "Task ID: $TASK_ID"
+  echo "Check the task details in the AWS Console: https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/rent-a-room-cluster/tasks/$TASK_ID/details"
+fi
 ```
 
-Visit the application URL to see your deployed application with the enhanced UI and workshop completion banner!
+Visit the application URL to see your deployed application with the enhanced UI from both teams!
+
+## 🏢 Real-World Benefits of GitOps and DevOps
+
+The approach we've demonstrated offers numerous benefits for real-world development teams:
+
+### 1. Team Autonomy
+
+Different teams can work on different parts of the application without stepping on each other's toes. The Home Page team and Room Listings team were able to make changes independently.
+
+### 2. Continuous Integration
+
+Each change is automatically built, tested, and deployed, ensuring that integration issues are caught early.
+
+### 3. Deployment Consistency
+
+The same pipeline is used for all changes, ensuring that every deployment follows the same process and meets the same quality standards.
+
+### 4. Security by Default
+
+Docker Scout automatically scans images for vulnerabilities, making security an integral part of the development process.
+
+### 5. Rapid Feedback
+
+Teams get immediate feedback on their changes, allowing them to iterate quickly and respond to user needs.
 
 ## 🎮 Interactive Challenge: Customize Your App Further
 
