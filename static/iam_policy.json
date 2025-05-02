@@ -257,8 +257,7 @@
       "Action": [
         "codebuild:CreateProject",
         "codebuild:BatchGetProjects",
-        "codebuild:UpdateProject",
-        "codebuild:TagResource"
+        "codebuild:UpdateProject"
       ],
       "Resource": [
         "arn:aws:codebuild:*:*:project/docker-build-cloud-project",
