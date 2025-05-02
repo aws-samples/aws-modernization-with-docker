@@ -612,7 +612,7 @@ This demonstrates how the Room Listings team can make changes independently of t
 Once the pipeline completes, verify the updated room listings by accessing your application URL again:
 
 ```bash
-echo "✅ Application URL: http://$PUBLIC_IP"
+echo "✅ Application URL: http://$PUBLIC_IP/rooms"
 ```
 
 ### 📸 Room Listings Transformation
