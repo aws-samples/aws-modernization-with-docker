@@ -82,7 +82,7 @@ This Dockerfile intentionally uses:
 Build the image using the vulnerable Dockerfile:
 
 ```bash
-docker build -t vulnerable-app:latest -f Dockerfile.vulnerable .
+docker build -t $DOCKER_USERNAME/rent-a-room:vulnerable -f Dockerfile.vulnerable .
 ```
 
 ---
@@ -92,14 +92,14 @@ docker build -t vulnerable-app:latest -f Dockerfile.vulnerable .
 Now let's scan our vulnerable image:
 
 ```bash
-docker scout quickview vulnerable-app:latest
+docker scout quickview $DOCKER_USERNAME/rent-a-room:vulnerable
 ```
 
 🔹 This will display a **summary of vulnerabilities** in the image.  
 🔹 To get a **detailed report**, run:
 
 ```bash
-docker scout cves vulnerable-app:latest
+docker scout cves $DOCKER_USERNAME/rent-a-room:vulnerable
 ```
 
 **Example Output:**

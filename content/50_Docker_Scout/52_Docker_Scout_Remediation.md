@@ -94,13 +94,13 @@ Key fixes:
 Build the image using the fixed Dockerfile:
 
 ```bash
-docker build -t fixed-app:latest -f Dockerfile.fixed .
+docker build -t $DOCKER_USERNAME/rent-a-room:fixed -f Dockerfile.fixed .
 ```
 
 Run another **Docker Scout scan** to confirm our major issues are fixed:
 
 ```bash
-docker scout cves fixed-app:latest
+docker scout cves $DOCKER_USERNAME/rent-a-room:fixed
 ```
 
 You may still see some vulnerabilities in the scan results. This is common in container security - even the latest available packages in a repository might have known vulnerabilities that haven't been patched yet.
@@ -125,7 +125,7 @@ These vulnerabilities represent the reality of container security - there's ofte
 Let's compare the vulnerability scan results between the vulnerable and fixed images:
 
 ```bash
-docker scout compare vulnerable-app:latest --to fixed-app:latest
+docker scout compare $DOCKER_USERNAME/rent-a-room:vulnerable --to $DOCKER_USERNAME/rent-a-room:fixed
 ```
 
 ![Scout Results](/images/Scout-Comparison.png)

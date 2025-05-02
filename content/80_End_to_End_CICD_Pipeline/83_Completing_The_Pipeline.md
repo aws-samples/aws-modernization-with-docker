@@ -293,7 +293,7 @@ echo "Note: Your browser may show a security warning since we're using HTTP. Cli
 
 Let's see the impact of the Home Page team's changes:
 
-![Home Page Before](/images/home-before.png)
+![Home Page Before](/images/docker-frontend-built-cropped.png)
 *Before: Basic home page with minimal styling and features*
 
 ![Home Page After](/images/home-after.png)
@@ -629,7 +629,41 @@ The Room Listings team has successfully transformed the browsing experience, mak
 
 ## 🔍 Examining Docker Scout Results
 
-Once the pipeline reaches the Security Scan stage, examine the Docker Scout results:
+Once the pipeline reaches the Security Scan stage, examine the Docker Scout results. The pipeline is configured to generate a security report using Docker Scout:
+
+```bash
+# Find the artifact bucket with the correct prefix
+ARTIFACT_BUCKET=$(aws s3 ls | grep docker-workshop-pipeline-artifactbucket | head -1 | awk '{print $3}')
+
+# Get the most recent artifact ID
+LATEST_ARTIFACT=$(aws s3 ls s3://$ARTIFACT_BUCKET/docker-workshop-pipe/SecuritySc/ | sort -k1,2 | tail -1 | awk '{print $4}')
+
+# Create a temporary directory for extraction
+mkdir -p scout-extract
+cd scout-extract
+
+# Download the artifact with the correct file extension
+echo "Downloading security scan artifact: $LATEST_ARTIFACT"
+aws s3 cp s3://$ARTIFACT_BUCKET/docker-workshop-pipe/SecuritySc/$LATEST_ARTIFACT ./artifact.zip
+
+# Extract the artifact
+echo "Attempting to extract the artifact..."
+unzip -B artifact.zip
+
+# Display the security report if it exists
+if [ -f security-report.json ]; then
+  echo "Security scan results:"
+  cat security-report.json | jq
+else
+  echo "Could not extract security-report.json."
+  ls -la
+fi
+
+# Return to the original directory
+cd ..
+```
+
+You can also view the results directly in the Docker Scout dashboard:
 
 1. Navigate to the Docker Scout dashboard: https://scout.docker.com/
 2. Find your `rent-a-room` repository
@@ -640,7 +674,64 @@ Once the pipeline reaches the Security Scan stage, examine the Docker Scout resu
 
 ![docker-scout-results](/images/docker-scout-results.png)
 
-Docker Scout provides security scanning as part of the CI/CD pipeline, ensuring that vulnerabilities are caught before deployment.
+### 🛡️ Optional: Security Gates with Docker Scout
+
+In our pipeline, we've already implemented Docker Scout security scanning, but let's explore how it's acting as a security gate to prevent vulnerable images from being deployed to production.
+
+The current CodeBuild project for Docker Scout includes this important configuration:
+
+```yaml
+build:
+  commands:
+    - echo Running Docker Scout security scan using container image...
+    - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
+    # Run Docker Scout with security gates
+    - >
+      docker run --rm 
+      -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
+      -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+      docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --exit-code --only-severity critical,high
+    - echo "No critical or high vulnerabilities found. Scan passed!"
+```
+
+The key parameter is `--exit-code 1 --only-severity critical,high`, which causes the command to:
+1. Return exit code 1 (failure) if vulnerabilities are found
+2. Only consider critical and high severity vulnerabilities
+
+This is a security gate that prevents images with serious vulnerabilities from proceeding through the pipeline to deployment.
+
+#### Testing the Security Gate
+
+To see how this security gate works in practice, you could use the vulnerable Dockerfile we created earlier in the Docker Scout section:
+
+```bash
+# Navigate to your repository
+cd /workshop/Rent-A-Room
+
+# Build and push the vulnerable image with a special tag
+docker build -t $DOCKER_USERNAME/rent-a-room:vulnerable -f Dockerfile.vulnerable .
+docker push $DOCKER_USERNAME/rent-a-room:vulnerable
+
+# Test the security gate locally
+docker scout cves $DOCKER_USERNAME/rent-a-room:vulnerable --exit-code --only-severity critical,high
+```
+
+This command will likely fail with a non-zero exit code due to the vulnerabilities in the older Node.js and Nginx versions used in the vulnerable Dockerfile.
+
+If you were to modify your pipeline to deploy this vulnerable image, the security scan stage would fail, preventing the vulnerable image from being deployed to your ECS cluster.
+
+#### Customizing Security Gates
+
+You can customize the security gates based on your organization's risk tolerance:
+- `--only-severity critical` - Only fail on critical vulnerabilities
+- `--only-severity critical,high` - Fail on critical and high vulnerabilities
+- `--only-severity critical,high,medium` - Stricter policy that fails on medium vulnerabilities too
+
+By implementing security gates, you ensure that security is an integral part of your CI/CD process, not just an afterthought.
+
+![docker-scout-results](/images/docker-scout-results.png)
+
+Docker Scout provides security scanning as part of the CI/CD pipeline, ensuring that vulnerabilities are caught before deployment. The security report is stored as an artifact in the pipeline, allowing you to review it at any time.
 
 ## 🚢 Verifying ECS Deployment
 
