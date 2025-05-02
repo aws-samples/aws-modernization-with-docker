@@ -37,6 +37,7 @@ Watch this side-by-side comparison between local and cloud builds:
   <source src="/images/build-cloudv-video-1080.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
+
 ::video{id=1080942520 type=vimeo autoplay=1 loop=1}
 
 For detailed performance metrics and an ROI calculator, visit the [Docker Build Cloud product page](https://www.docker.com/products/build-cloud/). The calculator demonstrates potential savings with Docker Build Cloud (example below shows estimated savings for a team of 100 engineers):
