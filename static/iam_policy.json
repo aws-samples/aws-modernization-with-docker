@@ -135,6 +135,41 @@
           ]
         }
       }
+    },
+    {
+      "Sid": "Applications",
+      "Effect": "Allow",
+      "Action": ["servicecatalog:ListApplications"],
+      "Resource": "arn:aws:servicecatalog:*:{{.AccountId}}:/applications/*"
+    },
+    {
+      "Sid": "CostAndUsage",
+      "Effect": "Allow",
+      "Action": ["ce:GetCostAndUsage"],
+      "Resource": "arn:aws:ce:*:{{.AccountId}}:/GetCostAndUsage"
+    },
+    {
+      "Sid": "SecurityHub",
+      "Effect": "Allow",
+      "Action": ["securityhub:DescribeHub"],
+      "Resource": "arn:aws:securityhub:*:{{.AccountId}}:hub/default*"
+    },
+    {
+      "Sid": "SecretsListPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:ListSecrets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsAccessPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetResourcePolicy",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:*:{{.AccountId}}:secret:VSCodeServer*"
     }
   ]
 }
