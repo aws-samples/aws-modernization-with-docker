@@ -253,18 +253,16 @@ You'll see the pipeline progress through the Source, Build, Security Scan, and D
 
 ![pipeline-execution-home](/images/pipeline-execution.png)
 
-Once completed, you can verify the changes by accessing your application URL:
+Once completed, you can verify the changes by accessing your application URL through the load balancer:
 
-```bash
-# Get the task URL (public IP of the ECS task)
-TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
-TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
-ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
-PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+# Get the load balancer DNS name
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+    --names rent-a-room-alb \
+    --query 'LoadBalancers[0].DNSName' \
+    --output text)
 
-echo "✅ Application URL: http://$PUBLIC_IP"
+echo "✅ Application URL: http://$ALB_DNS"
 echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
-```
 
 ### 📸 Home Page Transformation
 
@@ -577,35 +575,62 @@ This demonstrates how the Room Listings team can make changes independently of t
 Once the pipeline completes, verify the updated room listings by accessing your application URL again:
 
 ```bash
-echo "✅ Application URL: http://$PUBLIC_IP/rooms"
-```
+# Access the rooms page using the load balancer
+echo "✅ Application URL: http://$ALB_DNS/rooms"
 
-## 🚢 Verifying ECS Deployment
+🚢 Verifying ECS Deployment
+After the pipeline completes, verify your application is running on Amazon ECS through the load balancer:
 
-After the pipeline completes, verify your application is running on Amazon ECS:
+# Get the load balancer DNS name
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+    --names rent-a-room-alb \
+    --query 'LoadBalancers[0].DNSName' \
+    --output text)
 
-```bash
-# Get the task URL (public IP of the ECS task)
-TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
-TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
-ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
-PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
-
-# Check if we got a valid IP
-if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "None" ]; then
-  echo "✅ Application URL: http://$PUBLIC_IP"
+# Check if we got a valid DNS name
+if [ -n "$ALB_DNS" ] && [ "$ALB_DNS" != "None" ]; then
+  echo "✅ Application URL: http://$ALB_DNS"
   echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
 else
-  echo "⚠️ Could not retrieve task public IP. Using task details instead."
-  # Alternative approach: Get the task details and print them
-  TASK_ID=$(echo $TASK_ARN | awk -F'/' '{print $NF}')
-  echo "Task ID: $TASK_ID"
-  echo "Check the task details in the AWS Console: https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/rent-a-room-cluster/tasks/$TASK_ID/details"
+  echo "⚠️ Could not retrieve load balancer DNS. Let's check the load balancer status."
+  # Get load balancer status
+  LB_STATUS=$(aws elbv2 describe-load-balancers \
+    --names rent-a-room-alb \
+    --query 'LoadBalancers[0].State.Code' \
+    --output text 2>/dev/null || echo "Not Found")
+  
+  if [ "$LB_STATUS" == "active" ]; then
+    echo "Load balancer is active but couldn't retrieve DNS name. Check the AWS console."
+  elif [ "$LB_STATUS" == "Not Found" ]; then
+    echo "Load balancer 'rent-a-room-alb' not found. Please verify it was created correctly."
+  else
+    echo "Load balancer status: $LB_STATUS. Please check the AWS console."
+  fi
+fi
+
+# Check target group health
+TG_ARN=$(aws elbv2 describe-target-groups \
+  --names rent-a-room-tg \
+  --query 'TargetGroups[0].TargetGroupArn' \
+  --output text 2>/dev/null || echo "")
+
+if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
+  echo "Checking target health..."
+  HEALTH=$(aws elbv2 describe-target-health \
+    --target-group-arn "$TG_ARN" \
+    --query 'TargetHealthDescriptions[].TargetHealth.State' \
+    --output text)
+    
+  echo "Target health: $HEALTH"
+  if [ "$HEALTH" == "healthy" ]; then
+    echo "✅ Your application is running properly and receiving traffic via the load balancer!"
+  else
+    echo "⚠️ Your targets may not be healthy. Check the target group in the AWS Console."
+  fi
 fi
 ```
 
 Visit the application URL to see your deployed application with the enhanced UI from both teams!
-
 ### 📸 Room Listings Transformation
 
 Let's see the impact of the Room Listings team's changes:
