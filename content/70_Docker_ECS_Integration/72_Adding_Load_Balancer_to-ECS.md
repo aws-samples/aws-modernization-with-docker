@@ -241,6 +241,7 @@ aws ecs update-service \
 3. Select your load balancer **rent-a-room-alb**
 4. Copy the **DNS name**
 5. Access your application: `http://[DNS_NAME]`
+6. NOTE: This will take a few minutes to propgate and accept traffic. 
 
 #### Using AWS CLI:
 ```bash
@@ -251,6 +252,7 @@ ALB_DNS=$(aws elbv2 describe-load-balancers \
     --output text)
 
 echo "Your application is available at: http://$ALB_DNS"
+echo "NOTE: This will take a few minutes to propgate and accept traffic."
 ```
 
 ## **🔄 What Happens When Tasks Get New IPs?**
