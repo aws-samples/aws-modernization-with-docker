@@ -186,6 +186,25 @@ This CloudFormation template will automatically create:
 - All necessary IAM roles and permissions
 - An ECS cluster and service for deployment
 
+### 6️⃣ Access the website from ECS
+
+After the CloudFormation deployment, you'll see the pipeline progress through the Source, Build, Security Scan, and Deploy stages.
+
+![pipeline-execution-home](/images/pipeline-execution.png)
+
+Once completed, you can verify the running website hosted by ECS by accessing your application URL:
+
+```bash
+# Get the task URL (public IP of the ECS task)
+TASK_ARN=$(aws ecs list-tasks --cluster rent-a-room-cluster --service-name rent-a-room-service --query 'taskArns[0]' --output text)
+TASK_DETAILS=$(aws ecs describe-tasks --cluster rent-a-room-cluster --tasks $TASK_ARN)
+ENI_ID=$(echo $TASK_DETAILS | jq -r '.tasks[0].attachments[0].details[] | select(.name=="networkInterfaceId").value')
+PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+
+echo "✅ Application URL: http://$PUBLIC_IP"
+echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+```
+
 ## 🔍 How It Works
 
 1. **Connection Creation**: AWS generates a unique connection identifier

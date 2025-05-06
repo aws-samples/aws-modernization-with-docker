@@ -56,12 +56,8 @@ Imagine you're on the Home Page team, responsible for the landing page experienc
 As the lead developer on the Home Page team, you've been tasked with implementing these changes and deploying them through the CI/CD pipeline. Here's how you would make these updates:
 
 ```bash
-# Navigate to your existing Rent-A-Room repository that you forked earlier
-cd /workshop/Rent-A-Room
-
-# Upgrade Home component
-cat <<EOF > src/components/home/Home.js
-import React, { useState, useEffect } from 'react';
+cd /workshop/Rent-A-Room && \
+echo 'import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import BannerImage from "../../images/choosinghouse.svg";
 import "./home.css";
@@ -86,7 +82,6 @@ const Home = () => {
           <img src={BannerImage} alt="Room illustration" />
         </div>
       </div>
-
       <div className="features-section">
         <div className="feature-card">
           <div className="feature-icon">🏠</div>
@@ -108,12 +103,8 @@ const Home = () => {
   );
 };
 
-export default Home;
-EOF
-
-# Upgrade Home CSS
-cat <<EOF > src/components/home/home.css
-.home-container {
+export default Home;' > src/components/home/Home.js && \
+echo '.home-container {
   min-height: 100vh;
   background: linear-gradient(to bottom, #ffffff, #f8f9fa);
 }
@@ -244,12 +235,9 @@ cat <<EOF > src/components/home/home.css
   .hero-subtitle {
     font-size: 1.25rem;
   }
-}
-EOF
-
-# Add the files to git and commit
-git add src/components/home/Home.js src/components/home/home.css
-git commit -m "Home Team: Enhance landing page with modern UI and features section"
+}' > src/components/home/home.css && \
+git add src/components/home/Home.js src/components/home/home.css && \
+git commit -m "Home Team: Enhance landing page with modern UI and features section" && \
 git push origin main
 ```
 
@@ -283,10 +271,10 @@ echo "Note: Your browser may show a security warning since we're using HTTP. Cli
 Let's see the impact of the Home Page team's changes:
 
 ![Home Page Before](/images/docker-frontend-built-cropped.png)
-*Before: Basic home page with minimal styling and features*
+_Before: Basic home page with minimal styling and features_
 
 ![Home Page After](/images/home-after.png)
-*After: Enhanced home page with modern design and feature cards*
+_After: Enhanced home page with modern design and feature cards_
 
 The Home Page team has successfully transformed the landing page experience, creating a more engaging and informative entry point for users.
 
@@ -312,12 +300,8 @@ After conducting user interviews and A/B testing, your team has designed a new r
 As a full-stack developer on the Room Listings team, you're implementing these changes independently from the Home Page team's work. The modular architecture and CI/CD pipeline allow both teams to work in parallel without conflicts:
 
 ```bash
-# Navigate to your Rent-A-Room repository
-cd /workshop/Rent-A-Room
-
-# Upgrade RoomsList component
-cat <<EOF > src/components/roomslist/RoomsList.js
-import { useState } from "react";
+cd /workshop/Rent-A-Room && \
+echo 'import { useState } from "react";
 import "./roomslist.css";
 
 function RoomsList() {
@@ -360,30 +344,29 @@ function RoomsList() {
                 <h1>Available Rooms</h1>
                 <p>Find your perfect temporary home</p>
                 <div className="search-container">
-                    <input type="text" placeholder="Search by location..." className="search-input" />
+                    <input className="search-input" placeholder="Search by location..." type="text" />
                     <button className="search-button">Search</button>
                 </div>
             </div>
-            
             <div className="rooms-grid">
                 {rooms.map((room) => (
                     <div className="room-card" key={room.id}>
-                        <div 
-                            className="room-image" 
+                        <div
+                            className="room-image"
                             style={{
-                                backgroundImage: \`url("\${room.imageUrl}")\`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center'
+                                backgroundImage: `url("${room.imageUrl}")`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center"
                             }}
                         >
-                            <div className="price-tag">\${room.price}/night</div>
+                            <div className="price-tag">${room.price}/night</div>
                         </div>
                         <div className="room-details">
                             <h2>{room.name}</h2>
-                            <p className="location">
+                            <div className="location">
                                 <span className="location-icon">📍</span>
                                 {room.location}, {room.state}
-                            </p>
+                            </div>
                             <p className="description">{room.description}</p>
                             <div className="amenities">
                                 {room.amenities.map((amenity, index) => (
@@ -399,12 +382,8 @@ function RoomsList() {
     );
 }
 
-export default RoomsList;
-EOF
-
-# Upgrade RoomsList CSS
-cat <<EOF > src/components/roomslist/roomslist.css
-.rooms-page {
+export default RoomsList;' > src/components/roomslist/RoomsList.js && \
+echo '.rooms-page {
     min-height: 100vh;
     padding: 2rem;
     background: linear-gradient(to bottom, #f8f9fa, #ffffff);
@@ -577,12 +556,9 @@ cat <<EOF > src/components/roomslist/roomslist.css
     .search-button {
         width: 100%;
     }
-}
-EOF
-
-# Add the files to git and commit
-git add src/components/roomslist/RoomsList.js src/components/roomslist/roomslist.css
-git commit -m "Room Listings Team: Enhance room listings with card design and improved UX"
+}' > src/components/roomslist/roomslist.css && \
+git add src/components/roomslist/RoomsList.js src/components/roomslist/roomslist.css && \
+git commit -m "Room Listings Team: Enhance room listings with card design and improved UX" && \
 git push origin main
 ```
 
@@ -635,10 +611,10 @@ Visit the application URL to see your deployed application with the enhanced UI 
 Let's see the impact of the Room Listings team's changes:
 
 ![Rooms Page Before](/images/rooms-before.png)
-*Before: Simple list of rooms with basic information*
+_Before: Simple list of rooms with basic information_
 
 ![Rooms Page After](/images/rooms-after.png)
-*After: Modern card-based design with images, amenity tags, and improved visual hierarchy*
+_After: Modern card-based design with images, amenity tags, and improved visual hierarchy_
 
 The Room Listings team has successfully transformed the browsing experience, making it easier for users to find and compare rooms that meet their needs.
 
@@ -663,6 +639,7 @@ build:
 ```
 
 The key parameter is `--exit-code --only-severity critical,high`, which causes the command to:
+
 1. Return exit code (failure) if vulnerabilities are found
 2. Only consider critical and high severity vulnerabilities
 
@@ -687,6 +664,7 @@ If you were to modify your pipeline to deploy this vulnerable image, the securit
 #### Customizing Security Gates
 
 You can customize the security gates based on your organization's risk tolerance:
+
 - `--only-severity critical` - Only fail on critical vulnerabilities
 - `--only-severity critical,high` - Fail on critical and high vulnerabilities
 - `--only-severity critical,high,medium` - Stricter policy that fails on medium vulnerabilities too
@@ -743,7 +721,6 @@ You can also view the results directly in the Docker Scout dashboard:
    - Recommended fixes
 
 ![docker-scout-results](/images/docker-scout-results.png)
-
 
 ## 🏢 Real-World Benefits of GitOps and DevOps
 
