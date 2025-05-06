@@ -1389,6 +1389,8 @@ Resources:
                   - "elasticloadbalancing:RegisterTargets"
                   - "elasticloadbalancing:DeregisterTargets"
                   - "elasticloadbalancing:CreateListener"
+                  - "application-autoscaling:PutScalingPolicy"
+                  - "application-autoscaling:RegisterScalableTarget"
                 Resource: "*"
               - Sid: "AdditionalNetworkingPermissions"
                 Effect: "Allow"
