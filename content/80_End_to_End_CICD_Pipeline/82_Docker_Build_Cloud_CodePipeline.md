@@ -27,13 +27,13 @@ Let's examine the key components in our CloudFormation template that power our p
 
 The template includes a CodeBuild project specifically configured to use Docker Build Cloud:
 
-```yaml
+```
 # CodeBuild Project for Docker Build
 DockerBuildProject:
   Type: AWS::CodeBuild::Project
   Properties:
     Name: docker-build-cloud-project
-    Description: 'Build Docker image using Docker Build Cloud and push to Docker Hub'
+    Description: "Build Docker image using Docker Build Cloud and push to Docker Hub"
     ServiceRole: !GetAtt CodeBuildServiceRole.Arn
     Artifacts:
       Type: CODEPIPELINE
@@ -46,12 +46,12 @@ DockerBuildProject:
       Type: CODEPIPELINE
       BuildSpec: |
         version: 0.2
-        
+
         env:
           secrets-manager:
             DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
             DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
-        
+
         phases:
           pre_build:
             commands:
@@ -68,18 +68,18 @@ DockerBuildProject:
               - docker buildx inspect --bootstrap
               - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
               - IMAGE_TAG=${COMMIT_HASH:=latest}
-          
+
           build:
             commands:
               - echo Building Docker image using BuildKit...
               - docker buildx build --platform linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest -t $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --push .
-          
+
           post_build:
             commands:
               - echo Docker image pushed to Docker Hub
               - echo Writing image definitions file...
               - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
-        
+
         artifacts:
           files:
             - imagedefinitions.json
@@ -87,24 +87,25 @@ DockerBuildProject:
 
 #### 🔹 Key Elements of the Docker Build Configuration
 
-| Element | Description | Benefit |
-|---------|-------------|---------|
-| **ARM_CONTAINER** | Uses ARM-based build environment | Optimized for building ARM64 images |
-| **PrivilegedMode: true** | Enables Docker-in-Docker capabilities | Required for Docker Buildx |
-| **docker buildx** | Sets up Docker's multi-architecture build tool | Enables advanced build features |
-| **--platform linux/arm64** | Specifies target architecture | Ensures compatibility with ARM-based ECS instances |
-| **--push** | Pushes directly to registry | Streamlines the build and push process |
+| Element                    | Description                                    | Benefit                                            |
+| -------------------------- | ---------------------------------------------- | -------------------------------------------------- |
+| **ARM_CONTAINER**          | Uses ARM-based build environment               | Optimized for building ARM64 images                |
+| **PrivilegedMode: true**   | Enables Docker-in-Docker capabilities          | Required for Docker Buildx                         |
+| **docker buildx**          | Sets up Docker's multi-architecture build tool | Enables advanced build features                    |
+| **--platform linux/arm64** | Specifies target architecture                  | Ensures compatibility with ARM-based ECS instances |
+| **--push**                 | Pushes directly to registry                    | Streamlines the build and push process             |
 
 #### 🔹 Multi-Architecture Build Capabilities
 
 While our current pipeline is configured specifically for ARM64 to match our ECS task definition, Docker Build Cloud supports multi-architecture builds. With a simple modification, you could build for multiple architectures simultaneously:
 
-```yaml
+```
 # Example of multi-architecture build command
 docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest --push .
 ```
 
 This capability allows you to:
+
 - Build once, deploy anywhere
 - Support both x86 (AMD64) and ARM-based (ARM64) environments
 - Optimize for AWS Graviton processors while maintaining compatibility with traditional instances
@@ -114,7 +115,7 @@ This capability allows you to:
 
 The template includes a dedicated CodeBuild project for Docker Scout security scanning:
 
-```yaml
+```
 # CodeBuild Project for Docker Scout Security Scan
 DockerScoutProject:
   Type: AWS::CodeBuild::Project
@@ -133,12 +134,12 @@ DockerScoutProject:
       Type: CODEPIPELINE
       BuildSpec: |
         version: 0.2
-        
+
         env:
           secrets-manager:
             DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
             DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
-        
+
         phases:
           pre_build:
             commands:
@@ -146,36 +147,36 @@ DockerScoutProject:
               - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
               - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
               - IMAGE_TAG=${COMMIT_HASH:=latest}
-          
+
           build:
             commands:
               - echo Running Docker Scout security scan...
               - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
               # Run Docker Scout with security gates
               - >
-                docker run --rm 
-                -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                docker run --rm
+                -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME
+                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN
                 docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --exit-code --only-severity critical,high
               - echo "No critical or high vulnerabilities found. Scan passed!"
               - >
-                docker run --rm 
-                -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                docker run --rm
+                -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME
+                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN
                 docker/scout-cli recommendations $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
-          
+
           post_build:
             commands:
               - echo Security scan completed
               - echo Generating security report...
               - >
-                docker run --rm 
-                -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                docker run --rm
+                -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME
+                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN
                 docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --format json > security-report.json
               - echo "Creating imagedefinitions.json file"
               - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
-        
+
         artifacts:
           files:
             - security-report.json
@@ -184,18 +185,18 @@ DockerScoutProject:
 
 #### 🔹 Key Elements of the Docker Scout Integration
 
-| Element | Description | Benefit |
-|---------|-------------|---------|
-| **docker/scout-cli** | Uses Docker Scout CLI in a container | No need to install Scout separately |
-| **--exit-code --only-severity critical,high** | Implements security gates | Fails the build if critical/high vulnerabilities are found |
-| **recommendations** | Generates improvement suggestions | Provides actionable security insights |
-| **--format json > security-report.json** | Creates structured security report | Enables automated analysis and reporting |
+| Element                                       | Description                          | Benefit                                                    |
+| --------------------------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| **docker/scout-cli**                          | Uses Docker Scout CLI in a container | No need to install Scout separately                        |
+| **--exit-code --only-severity critical,high** | Implements security gates            | Fails the build if critical/high vulnerabilities are found |
+| **recommendations**                           | Generates improvement suggestions    | Provides actionable security insights                      |
+| **--format json > security-report.json**      | Creates structured security report   | Enables automated analysis and reporting                   |
 
 ### 3️⃣ Complete Pipeline Structure
 
 The CloudFormation template defines a complete pipeline that connects all these components:
 
-```yaml
+```
 # CodePipeline
 Pipeline:
   Type: AWS::CodePipeline::Pipeline
@@ -213,14 +214,14 @@ Pipeline:
               Category: Source
               Owner: AWS
               Provider: CodeStarSourceConnection
-              Version: '1'
+              Version: "1"
             Configuration:
               ConnectionArn: !Ref CodeStarConnectionArn
               FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}
               BranchName: !Ref GitHubBranch
             OutputArtifacts:
               - Name: SourceCode
-      
+
       # Build Stage - Build Docker image with Docker Build Cloud
       - Name: Build
         Actions:
@@ -229,14 +230,14 @@ Pipeline:
               Category: Build
               Owner: AWS
               Provider: CodeBuild
-              Version: '1'
+              Version: "1"
             Configuration:
               ProjectName: !Ref DockerBuildProject
             InputArtifacts:
               - Name: SourceCode
             OutputArtifacts:
               - Name: BuildOutput
-      
+
       # Security Scan Stage - Scan with Docker Scout
       - Name: SecurityScan
         Actions:
@@ -245,14 +246,14 @@ Pipeline:
               Category: Build
               Owner: AWS
               Provider: CodeBuild
-              Version: '1'
+              Version: "1"
             Configuration:
               ProjectName: !Ref DockerScoutProject
             InputArtifacts:
               - Name: BuildOutput
             OutputArtifacts:
               - Name: SecurityScanOutput
-      
+
       # Deploy Stage - Deploy to ECS
       - Name: Deploy
         Actions:
@@ -261,7 +262,7 @@ Pipeline:
               Category: Deploy
               Owner: AWS
               Provider: ECS
-              Version: '1'
+              Version: "1"
             Configuration:
               ClusterName: !Ref ECSClusterName
               ServiceName: !Ref ECSServiceName
@@ -272,23 +273,25 @@ Pipeline:
 
 #### 🔹 Pipeline Stages Explained
 
-| Stage | Purpose | Key Components |
-|-------|---------|----------------|
-| **Source** | Pull code from GitHub | CodeStar Connection, GitHub repository |
-| **Build** | Build Docker image | Docker Build Cloud, Buildx, ARM64 optimization |
-| **Security Scan** | Scan for vulnerabilities | Docker Scout, Security gates, Recommendations |
-| **Deploy** | Deploy to ECS | Amazon ECS, Container deployment |
+| Stage             | Purpose                  | Key Components                                 |
+| ----------------- | ------------------------ | ---------------------------------------------- |
+| **Source**        | Pull code from GitHub    | CodeStar Connection, GitHub repository         |
+| **Build**         | Build Docker image       | Docker Build Cloud, Buildx, ARM64 optimization |
+| **Security Scan** | Scan for vulnerabilities | Docker Scout, Security gates, Recommendations  |
+| **Deploy**        | Deploy to ECS            | Amazon ECS, Container deployment               |
 
 ## 💡 How Docker Technologies Integrate
 
 The pipeline seamlessly integrates Docker technologies:
 
 1. **Docker Build Cloud with Buildx**:
+
    - Optimizes build performance with distributed building
    - Supports ARM64 architecture for AWS Graviton compatibility
    - Streamlines the build and push process
 
 2. **Docker Scout**:
+
    - Implements security gates to prevent vulnerable images from being deployed
    - Provides actionable recommendations for improving security
    - Generates detailed security reports for compliance and auditing
@@ -312,7 +315,7 @@ While our current pipeline is optimized specifically for ARM64 to match our ECS 
 
 To enable multi-architecture builds in your own projects, you would modify the build command to:
 
-```bash
+```
 docker buildx build --platform linux/amd64,linux/arm64 -t yourusername/yourapp:latest --push .
 ```
 
