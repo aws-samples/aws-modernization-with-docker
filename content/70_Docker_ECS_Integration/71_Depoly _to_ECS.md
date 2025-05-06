@@ -128,12 +128,20 @@ In this section, we will:
 
 ```bash
 
-# Create the ECS service-linked role
-aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
+# Check if the ECS service-linked role already exists
+if ! aws iam get-role --role-name AWSServiceRoleForECS &> /dev/null; then
+  echo "Creating ECS service-linked role..."
+  aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
+  
+  # Wait for role to propagate
+  echo "Waiting for role to propagate..."
+  sleep 20
+else
+  echo "✅ ECS service-linked role already exists"
+fi
 
-# Wait for 20 seconds to ensure the role propagates
-sleep 20
-
+# Create the ECS cluster
+echo "Creating ECS cluster..."
 aws ecs create-cluster --cluster-name rent-a-room-cluster
 ```
 
