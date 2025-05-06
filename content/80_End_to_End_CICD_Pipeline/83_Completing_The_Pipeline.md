@@ -253,6 +253,7 @@ You'll see the pipeline progress through the Source, Build, Security Scan, and D
 
 ![pipeline-execution-home](/images/pipeline-execution.png)
 
+
 Once completed, you can verify the changes by accessing your application URL through the load balancer:
 
 ```bash
@@ -262,9 +263,49 @@ ALB_DNS=$(aws elbv2 describe-load-balancers \
     --query 'LoadBalancers[0].DNSName' \
     --output text)
 
-echo "✅ Application URL: http://$ALB_DNS"
-echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+# Check if we got a valid DNS name
+if [ -n "$ALB_DNS" ] && [ "$ALB_DNS" != "None" ]; then
+  echo "✅ Application URL: http://$ALB_DNS"
+  echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+else
+  echo "⚠️ Could not retrieve load balancer DNS. Let's check the load balancer status."
+  # Get load balancer status
+  LB_STATUS=$(aws elbv2 describe-load-balancers \
+    --names rent-a-room-alb \
+    --query 'LoadBalancers[0].State.Code' \
+    --output text 2>/dev/null || echo "Not Found")
+  
+  if [ "$LB_STATUS" == "active" ]; then
+    echo "Load balancer is active but couldn't retrieve DNS name. Check the AWS console."
+  elif [ "$LB_STATUS" == "Not Found" ]; then
+    echo "Load balancer 'rent-a-room-alb' not found. Please verify it was created correctly."
+  else
+    echo "Load balancer status: $LB_STATUS. Please check the AWS console."
+  fi
+fi
+
+# Check target group health
+TG_ARN=$(aws elbv2 describe-target-groups \
+  --names rent-a-room-tg \
+  --query 'TargetGroups[0].TargetGroupArn' \
+  --output text 2>/dev/null || echo "")
+
+if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
+  echo "Checking target health..."
+  HEALTH=$(aws elbv2 describe-target-health \
+    --target-group-arn "$TG_ARN" \
+    --query 'TargetHealthDescriptions[].TargetHealth.State' \
+    --output text)
+    
+  echo "Target health: $HEALTH"
+  if [ "$HEALTH" == "healthy" ]; then
+    echo "✅ Your application is running properly and receiving traffic via the load balancer!"
+  else
+    echo "⚠️ Your targets may not be healthy. Check the target group in the AWS Console."
+  fi
+fi
 ```
+
 
 ### 📸 Home Page Transformation
 
@@ -574,15 +615,10 @@ https://console.aws.amazon.com/codepipeline/home
 
 This demonstrates how the Room Listings team can make changes independently of the Home Page team, with both sets of changes flowing through the same pipeline.
 
-Once the pipeline completes, verify the updated room listings by accessing your application URL again:
-
-```bash
-# Access the rooms page using the load balancer
-echo "✅ Application URL: http://$ALB_DNS/rooms"
-
-🚢 Verifying ECS Deployment
+### 🚢 Verifying ECS Deployment
 After the pipeline completes, verify your application is running on Amazon ECS through the load balancer:
 
+```bash
 # Get the load balancer DNS name
 ALB_DNS=$(aws elbv2 describe-load-balancers \
     --names rent-a-room-alb \
