@@ -255,6 +255,7 @@ You'll see the pipeline progress through the Source, Build, Security Scan, and D
 
 Once completed, you can verify the changes by accessing your application URL through the load balancer:
 
+```bash
 # Get the load balancer DNS name
 ALB_DNS=$(aws elbv2 describe-load-balancers \
     --names rent-a-room-alb \
@@ -263,6 +264,7 @@ ALB_DNS=$(aws elbv2 describe-load-balancers \
 
 echo "✅ Application URL: http://$ALB_DNS"
 echo "Note: Your browser may show a security warning since we're using HTTP. Click 'Advanced' and 'Continue' to proceed."
+```
 
 ### 📸 Home Page Transformation
 
