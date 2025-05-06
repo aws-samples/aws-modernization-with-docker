@@ -190,9 +190,11 @@ This CloudFormation template will automatically create:
 
 After the CloudFormation deployment, you'll see the pipeline progress through the Source, Build, Security Scan, and Deploy stages.
 
+Click here to open [**CodePipeline**](console.aws.amazon.com/codesuite/codepipeline/pipelines) in the Console and select your pipeline.
+
 ![pipeline-execution-home](/images/pipeline-execution.png)
 
-Once completed, you can verify the running website hosted by ECS by accessing your application URL through the load balancer:
+Once the pipeline is completed, you can verify the running website hosted by ECS by accessing your application URL through the load balancer:
 
 ```bash
 # Get the load balancer DNS name
