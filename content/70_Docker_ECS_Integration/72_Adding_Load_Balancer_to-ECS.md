@@ -86,8 +86,7 @@ The ECS service configured to register tasks with the target group automatically
 ### **1️⃣ Create a Target Group**
 
 #### Using AWS Console:
-1. Open the [EC2 console](https://console.aws.amazon.com/ec2/)
-2. Navigate to **Target Groups** in the left sidebar
+1. Navigate to **Target Groups** in the [EC2 console](https://console.aws.amazon.com/ec2/home#TargetGroups)
 3. Click **Create target group**
 4. Configure settings:
    ```
@@ -125,7 +124,7 @@ aws elbv2 create-target-group \
 ### **2️⃣ Create an Application Load Balancer**
 
 #### Using AWS Console:
-1. In the EC2 console, navigate to **Load Balancers**
+1. In the EC2 console, navigate to [**Load Balancers**](http://console.aws.amazon.com/ec2/home#LoadBalancers)
 2. Click **Create load balancer**
 3. Choose **Application Load Balancer**
 4. Configure basic settings:
