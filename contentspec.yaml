@@ -16,7 +16,6 @@ params:
 additionalLinks:
   - title: "AWS Modernization with Docker"
     link: "https://docker.awsworkshop.io/"
-  
 
 # START Infrastructure
 infrastructure:
@@ -24,14 +23,13 @@ infrastructure:
     - templateLocation: static/infrastructure/vscode-server.yaml
       label: Docker Workshop Vscode Server
       participantVisibleStackOutputs:
-        - VSCODEURL
+        - URL
         - Password
-    
 
       #parameters:
-      
+
       #- templateParameter: AssetZipS3Path
-        #defaultValue: '{{.AssetsBucketName}}/{{.AssetsBucketPrefix}}workshop.zip'
+      #defaultValue: '{{.AssetsBucketName}}/{{.AssetsBucketPrefix}}workshop.zip'
 
 # END Infrastructure
 
@@ -42,7 +40,7 @@ awsAccountConfig:
   serviceLinkedRoles:
     - appsync.amazonaws.com
   participantRole:
-    iamPolicies: 
+    iamPolicies:
       - static/iam_policy.json
     managedPolicies:
       - "arn:aws:iam::aws:policy/AdministratorAccess"
@@ -69,7 +67,4 @@ awsAccountConfig:
         - us-west-2
         - us-east-1
         - us-east-2
-
-        
-      
 # END Accounts
