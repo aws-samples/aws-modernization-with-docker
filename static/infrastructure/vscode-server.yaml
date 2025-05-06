@@ -1388,6 +1388,7 @@ Resources:
                   - "elasticloadbalancing:DescribeTargetGroups"
                   - "elasticloadbalancing:RegisterTargets"
                   - "elasticloadbalancing:DeregisterTargets"
+                  - "elasticloadbalancing:CreateListener"
                 Resource: "*"
               - Sid: "AdditionalNetworkingPermissions"
                 Effect: "Allow"
