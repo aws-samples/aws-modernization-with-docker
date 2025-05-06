@@ -675,9 +675,91 @@ By implementing security gates, you ensure that security is an integral part of 
 
 Docker Scout provides security scanning as part of the CI/CD pipeline, ensuring that vulnerabilities are caught before deployment. The security report is stored as an artifact in the pipeline, allowing you to review it at any time.
 
-## 🔍 Examining Docker Scout Results
+## 🔍 Integrating with Docker Scout using Security Gate
 
-Once the pipeline reaches the Security Scan stage, examine the Docker Scout results. The pipeline is configured to generate a security report using Docker Scout:
+You could run the following command to update the `docker-workshop-pipeline` stack with the integration of Docker Scout Security Gate.
+
+```bash
+# Download the new CloudFormation template with Docker Scout
+curl -s -f https://raw.githubusercontent.com/aws-samples/aws-modernization-with-docker/main/static/infrastructure/ecs-pipeline-setup-with-docker-scout.yaml -o ecs-pipeline-setup-with-docker-scout.yaml || { echo "Failed to download template"; exit 1; }
+
+# Verify the template was downloaded correctly
+if [ -s ecs-pipeline-setup-with-docker-scout.yaml ]; then
+  echo "✅ Template downloaded successfully. Verifying content..."
+  grep -q "AWSTemplateFormatVersion" ecs-pipeline-setup-with-docker-scout.yaml && echo "✅ Template validation passed" || echo "❌ Template validation failed"
+else
+  echo "❌ Template download failed or file is empty"
+  exit 1
+fi
+
+# Check if Docker Hub credentials already exist in Secrets Manager
+echo "Checking existing Docker Hub credentials in Secrets Manager..."
+if aws secretsmanager describe-secret --secret-id dockerhub-credentials &>/dev/null; then
+  echo "✅ Using existing Docker Hub credentials from Secrets Manager"
+  # Get the Docker username from the existing secret for the stack update
+  DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query 'SecretString' --output text | jq -r '.DOCKER_USERNAME')
+else
+  echo "❌ Docker Hub credentials not found in Secrets Manager. Please create them first."
+  exit 1
+fi
+
+# Deploy the CloudFormation stack with Docker Scout
+echo "Updating CloudFormation stack with Docker Scout integration..."
+aws cloudformation deploy \
+  --template-file ecs-pipeline-setup-with-docker-scout.yaml \
+  --stack-name docker-workshop-pipeline \
+  --parameter-overrides \
+    GitHubOwner=$GITHUB_USERNAME \
+    GitHubRepo=$GITHUB_REPO \
+    GitHubBranch=$GITHUB_BRANCH \
+    CodeStarConnectionArn=$CONNECTION_ARN \
+    DockerHubUsername=$DOCKER_USERNAME \
+    DockerHubOrganization=${DOCKER_ORGANIZATION:-$DOCKER_USERNAME} \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset
+
+# Check the deployment status
+echo "Checking deployment status..."
+STATUS=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].StackStatus" --output text)
+echo "Stack status: $STATUS"
+
+if [ "$STATUS" == "CREATE_COMPLETE" ] || [ "$STATUS" == "UPDATE_COMPLETE" ]; then
+  echo "✅ Stack update successful!"
+
+  # Get the pipeline URL and other relevant outputs
+  PIPELINE_URL=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].Outputs[?OutputKey=='PipelineURL'].OutputValue" --output text)
+  echo "🔗 Pipeline URL: $PIPELINE_URL"
+
+  # Get Docker Scout specific outputs if available
+  SCOUT_URL=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].Outputs[?OutputKey=='DockerScoutDashboardURL'].OutputValue" --output text)
+  if [ ! -z "$SCOUT_URL" ]; then
+    echo "🔍 Docker Scout Dashboard URL: $SCOUT_URL"
+  fi
+else
+  echo "⚠️ Deployment status: $STATUS - Check the AWS Console for more details"
+fi
+```
+
+Once the CloudFormation stack is updated, run the following command to make a small change to trigger a build in the CodePipeline:
+
+```bash
+# change directory into the repo folder
+cd /workshop/Rent-A-Room
+
+# Make a small change to force a rebuild
+echo "// Small change" >> src/App.js
+
+# git updates
+git add src/App.js
+git commit -m "small change"
+git push
+```
+
+Once the code pipeline reaches the **Security Scan** stage, examine the failed build:
+
+![cicdpipeline-scout-security-gate](/images/cicdpipeline-scout-security-gate.png)
+
+The pipeline is configured to generate a security report using Docker Scout:
 
 ```bash
 # Find the artifact bucket with the correct prefix
