@@ -1,0 +1,355 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Docker Workshop CI/CD Pipeline with ECS deployment'
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: GitHub repository owner
+  
+  GitHubRepo:
+    Type: String
+    Default: Rent-A-Room
+    Description: GitHub repository name
+  
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub repository branch
+  
+  CodeStarConnectionArn:
+    Type: String
+    Description: ARN of the CodeStar connection to GitHub
+  
+  DockerHubUsername:
+    Type: String
+    Default: '{{resolve:secretsmanager:dockerhub-credentials:SecretString:DOCKER_USERNAME}}'
+    Description: Docker Hub username from Secrets Manager
+  
+  ECSClusterName:
+    Type: String
+    Default: rent-a-room-cluster
+    Description: Name of the existing ECS cluster
+  
+  ECSServiceName:
+    Type: String
+    Default: rent-a-room-service
+    Description: Name of the existing ECS service
+
+Resources:
+  # S3 Bucket for CodePipeline artifacts
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+    DeletionPolicy: Retain
+
+  # IAM Role for CodeBuild
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Policies:
+        - PolicyName: CodeBuildServiceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+                Resource: !Sub ${ArtifactBucket.Arn}/*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: 'arn:aws:secretsmanager:*:*:secret:dockerhub-credentials*'
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeTaskDefinition
+                  - ecs:RegisterTaskDefinition
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                Resource: '*'
+
+  # IAM Role for CodePipeline
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
+      Policies:
+        - PolicyName: CodePipelineServiceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub ${ArtifactBucket.Arn}
+                  - !Sub ${ArtifactBucket.Arn}/*
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref CodeStarConnectionArn
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:DescribeTaskDefinition
+                  - ecs:DescribeTasks
+                  - ecs:ListTasks
+                  - ecs:RegisterTaskDefinition
+                  - ecs:UpdateService
+                Resource: '*'
+
+  # CodeBuild Project for Docker Build
+  DockerBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: docker-build-cloud-project
+      Description: 'Build Docker image using Docker Build Cloud and push to Docker Hub'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: ARM_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        PrivilegedMode: true
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          
+          env:
+            secrets-manager:
+              DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
+              DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+          
+          phases:
+            pre_build:
+              commands:
+                - echo Logging in to Docker Hub...
+                - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+                - echo Setting up Docker Buildx...
+                - docker version
+                - mkdir -p ~/.docker/cli-plugins/
+                - curl -SL https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-arm64 -o ~/.docker/cli-plugins/docker-buildx
+                - chmod +x ~/.docker/cli-plugins/docker-buildx
+                - docker buildx version
+                - docker buildx create --name mybuilder --driver docker-container
+                - docker buildx use mybuilder
+                - docker buildx inspect --bootstrap
+                - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+                - IMAGE_TAG=${COMMIT_HASH:=latest}
+            
+            build:
+              commands:
+                - echo Building Docker image using BuildKit...
+                # Build only for arm64 to match the task definition's ARM64 architecture
+                - docker buildx build --platform linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest -t $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --push .
+            
+            post_build:
+              commands:
+                - echo Docker image pushed to Docker Hub
+                - echo Writing image definitions file...
+                # This format matches what ECS deployment expects
+                - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
+          
+          artifacts:
+            files:
+              - imagedefinitions.json
+
+  # CodeBuild Project for Docker Scout Security Scan
+  DockerScoutProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: docker-scout-scan-project
+      Description: 'Scan Docker image using Docker Scout'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: ARM_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        PrivilegedMode: true
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          
+          env:
+            secrets-manager:
+              DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
+              DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+          
+          phases:
+            pre_build:
+              commands:
+                - echo Logging in to Docker Hub...
+                - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+                - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+                - IMAGE_TAG=${COMMIT_HASH:=latest}
+                - ls -la
+            
+            build:
+              commands:
+                - echo Running Docker Scout security scan using container image...
+                - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
+                # Run Docker Scout with security gates
+                - >
+                  docker run --rm 
+                  -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
+                  -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                  docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --exit-code --only-severity critical,high
+                - echo "No critical or high vulnerabilities found. Scan passed!"
+                - >
+                  docker run --rm 
+                  -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
+                  -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                  docker/scout-cli recommendations $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG || echo "Scout recommendations failed but continuing"
+            
+            post_build:
+              commands:
+                - echo Security scan completed
+                - echo Generating security report...
+                # Generate security report using Docker Scout container
+                - >
+                  docker run --rm 
+                  -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
+                  -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                  docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --format json > security-report.json || echo '{"vulnerabilities":[]}' > security-report.json
+                - echo "Creating imagedefinitions.json file"
+                - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
+                - ls -la
+          
+          artifacts:
+            files:
+              - security-report.json
+              - imagedefinitions.json
+
+  # CodePipeline
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        # Source Stage - Pull from GitHub
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnectionArn
+                FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}
+                BranchName: !Ref GitHubBranch
+              OutputArtifacts:
+                - Name: SourceCode
+        
+        # Build Stage - Build Docker image with Docker Build Cloud
+        - Name: Build
+          Actions:
+            - Name: BuildDockerImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref DockerBuildProject
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: BuildOutput
+        
+        # Security Scan Stage - Scan with Docker Scout
+        - Name: SecurityScan
+          Actions:
+            - Name: DockerScoutScan
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref DockerScoutProject
+              InputArtifacts:
+                - Name: BuildOutput
+              OutputArtifacts:
+                - Name: SecurityScanOutput
+        
+        # Deploy Stage - Deploy to ECS
+        - Name: Deploy
+          Actions:
+            - Name: DeployToECS
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: '1'
+              Configuration:
+                ClusterName: !Ref ECSClusterName
+                ServiceName: !Ref ECSServiceName
+                FileName: imagedefinitions.json
+              InputArtifacts:
+                - Name: SecurityScanOutput
+
+Outputs:
+  PipelineURL:
+    Description: URL to the CodePipeline console
+    Value: !Sub https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${Pipeline}
+
+  DockerHubRepository:
+    Description: Docker Hub repository URL
+    Value: !Sub https://hub.docker.com/r/${DockerHubUsername}/rent-a-room
+
+  ECSClusterName:
+    Description: Name of the ECS Cluster
+    Value: !Ref ECSClusterName
+
+  ECSServiceName:
+    Description: Name of the ECS Service
+    Value: !Ref ECSServiceName
