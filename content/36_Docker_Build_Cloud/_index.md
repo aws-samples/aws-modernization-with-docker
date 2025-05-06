@@ -50,6 +50,7 @@ If you need to authenticate, you will be guided through several prompts:
 5. Copy the one-time code shown in your terminal
 6. Press Enter to open the browser
 7. Paste the code in GitHub and authorize access
+8. Come back to VS Code Server and wait for it be authenticated. (This can take up to 30 seconds or more)
 
 ![Github Cli Auth](/images/gh-auth.png)
 
@@ -163,7 +164,7 @@ This Dockerfile uses a multi-stage build process to create an optimized producti
 
 ##### Build Stage
 
-```bash
+```
 # Build stage
 FROM node:12 as build
 WORKDIR /app
@@ -183,7 +184,7 @@ RUN npm run build
 
 ##### Production Stage
 
-```bash
+```
 # Production stage
 FROM nginx:1.14
 COPY --from=build /app/build /usr/share/nginx/html
@@ -266,7 +267,7 @@ docker images | grep rent-a-room
 
 If built successfully you will see output like this:
 
-```bash
+```
 rent-a-room     latest            0b9c31de0251   3 seconds ago    111MB
 ```
 
@@ -370,7 +371,7 @@ docker images | grep rent-a-room
 
 You should see both your local image and the tagged image ready for Docker Hub:
 
-```bash
+```
 $DOCKER_USERNAME/rent-a-room   cloud     0b9c31de0251   5 minutes ago   111MB
 rent-a-room                    latest    0b9c31de0251   5 minutes ago   111MB
 ```
@@ -378,6 +379,7 @@ rent-a-room                    latest    0b9c31de0251   5 minutes ago   111MB
 #### **Verify the Image on Docker Hub**
 
 After pushing, you can verify that your image is available on Docker Hub by visiting:
+
 ```
 https://hub.docker.com/r/YOUR-USERNAME/rent-a-room
 ```

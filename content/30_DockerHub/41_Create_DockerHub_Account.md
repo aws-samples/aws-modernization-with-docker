@@ -7,6 +7,7 @@ weight: 32
 # 🔑 Create a Docker Hub Account
 
 In this section, we will:
+
 - ✅ **Create a Docker Hub account** (if you don't have one already)
 - ✅ **Generate a Docker Hub access token** for secure CLI authentication
 
@@ -33,15 +34,13 @@ If you don't already have a Docker Hub account, follow these steps:
 
 For secure CLI authentication, create a personal access token:
 
-1. Log in to [Docker Hub](https://hub.docker.com/)
-2. Click on your username in the top-right corner
-3. Select **Account Settings**
-4. Navigate to the **Security** tab
-5. Click **New Access Token**
-6. Enter a description (e.g., "Workshop Token")
-7. Select appropriate permissions (Read, Write, Delete)
-8. Click **Generate**
-9. **IMPORTANT**: Copy and save your token immediately! It will only be shown once.
+1. Navigate to [Personal Access Tokens](https://app.docker.com/settings/personal-access-tokens) section in your Docker Hub.
+2. Click on **Generate new token**
+3. Enter a description (e.g., "Workshop Token")
+4. Choose **30 days** for the Expiration date.
+5. Select appropriate permissions as **Read, Write, Delete**
+6. Click **Generate**
+7. **IMPORTANT**: Copy and save your token immediately! It will only be shown once. Or just keep the browser tab open.
 
 ![Docker Hub Access Token](/images/token-creation.png)
 
@@ -75,6 +74,7 @@ Follow these security best practices for your access token:
 ## **4️⃣ Next Steps**
 
 Now that you have a Docker Hub account and access token:
+
 1. **Keep your token handy** for the next section
 2. **Proceed to Docker Hub CLI Authentication** to connect your local environment
 3. **Prepare to push and pull images** from Docker Hub

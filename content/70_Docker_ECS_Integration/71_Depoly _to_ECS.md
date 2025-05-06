@@ -14,18 +14,20 @@ Amazon Elastic Container Service (ECS) is AWS's container orchestration service.
 
 ## **🚀 ECS Launch Types**
 
-| Launch Type    | You Manage                  | Best For                 | Common Use Cases                                      |
-|----------------|-----------------------------|--------------------------|-------------------------------------------------------|
-| **AWS Fargate**| Nothing - fully managed     | Teams focused on apps    | • Microservices • Web applications • API backends     |
-| **EC2**        | EC2 instances & capacity     | Infrastructure control   | • Legacy apps • GPU workloads • Cost optimization     |
+| Launch Type     | You Manage               | Best For               | Common Use Cases                                  |
+| --------------- | ------------------------ | ---------------------- | ------------------------------------------------- |
+| **AWS Fargate** | Nothing - fully managed  | Teams focused on apps  | • Microservices • Web applications • API backends |
+| **EC2**         | EC2 instances & capacity | Infrastructure control | • Legacy apps • GPU workloads • Cost optimization |
 
 **AWS Fargate (Serverless)**
+
 - No servers to manage or maintain
 - Pay only for resources your containers use
 - Automatic scaling and high availability
 - Perfect for teams that want to focus on application development
 
 **Amazon EC2**
+
 - Full control over infrastructure
 - Custom instance types and configurations
 - Access to instance operating system
@@ -50,18 +52,24 @@ Think of this as the blueprint for your application. It includes:
 - Storage configurations
 
 Example Task Definition components:
+
 ```json
 {
-    "family": "web-app",
-    "containerDefinitions": [{
-        "name": "web",          // Container name
-        "image": "nginx:latest", // Docker image
-        "cpu": 256,             // CPU units
-        "memory": 512,          // Memory in MB
-        "portMappings": [{      // Port configurations
-            "containerPort": 80
-        }]
-    }]
+  "family": "web-app",
+  "containerDefinitions": [
+    {
+      "name": "web", // Container name
+      "image": "nginx:latest", // Docker image
+      "cpu": 256, // CPU units
+      "memory": 512, // Memory in MB
+      "portMappings": [
+        {
+          // Port configurations
+          "containerPort": 80
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -123,8 +131,8 @@ In this section, we will:
 # Create the ECS service-linked role
 aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
 
-# Wait for 10 seconds to ensure the role propagates
-sleep 10
+# Wait for 20 seconds to ensure the role propagates
+sleep 20
 
 aws ecs create-cluster --cluster-name rent-a-room-cluster
 ```
@@ -154,6 +162,7 @@ aws ecs create-cluster --cluster-name rent-a-room-cluster
 ### Using AWS CLI:
 
 Save this as `task-definition.json`:
+
 ```bash
 cat << EOF > task-definition.json
 {
@@ -180,6 +189,7 @@ EOF
 ```
 
 Then run:
+
 ```bash
 aws ecs register-task-definition --cli-input-json file://task-definition.json
 ```
@@ -247,6 +257,7 @@ aws ecs create-service \
 ## **4️⃣ Access Your Application**
 
 ### Using AWS Console:
+
 1. In the [Amazon ECS console](https://console.aws.amazon.com/ecs/), navigate to your service
 2. Click on the running task
 3. Find the **Public IP**
@@ -304,7 +315,7 @@ if [ ! -z "$ENI_ID" ]; then
         --network-interface-ids $ENI_ID \
         --query 'NetworkInterfaces[0].Association.PublicIp' \
         --output text)
-    
+
     echo "Your application is available at: http://$PUBLIC_IP:80"
 else
     echo "Could not get network interface ID. Task might still be starting."
@@ -314,6 +325,7 @@ fi
 ## **🔍 Monitoring**
 
 Monitor your application using:
+
 - ECS console dashboard
 - CloudWatch metrics
 - Container insights (if enabled)
@@ -328,17 +340,18 @@ Monitor your application using:
 
 ## **🎯 Key Takeaways**
 
-| Concept | Understanding |
-|---------|---------------|
-| **ECS Cluster** | The foundation that hosts your containers - like a virtual data center |
-| **Launch Types** | Fargate (serverless) vs EC2 (server-based) - choose based on your needs |
-| **Task Definition** | The blueprint that defines how your container should run |
-| **ECS Service** | The manager that maintains your desired container state |
-| **Architecture** | Understanding how all components work together for container orchestration |
+| Concept             | Understanding                                                              |
+| ------------------- | -------------------------------------------------------------------------- |
+| **ECS Cluster**     | The foundation that hosts your containers - like a virtual data center     |
+| **Launch Types**    | Fargate (serverless) vs EC2 (server-based) - choose based on your needs    |
+| **Task Definition** | The blueprint that defines how your container should run                   |
+| **ECS Service**     | The manager that maintains your desired container state                    |
+| **Architecture**    | Understanding how all components work together for container orchestration |
 
 ## **🚀 Next Steps**
 
 Now that you have:
+
 - ✅ Created an ECS cluster
 - ✅ Deployed a containerized application
 - ✅ Learned about ECS components

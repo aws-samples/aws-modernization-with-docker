@@ -11,12 +11,13 @@ Now that we have scanned our vulnerable image with **Docker Scout**, let's **fix
 ---
 
 ## **1️⃣ Analyzing the Vulnerable Dockerfile**
+
 Let's examine the vulnerabilities in our `Dockerfile.vulnerable`:
 
-```dockerfile
+```
 # Build stage
 # Using Node.js 12.22.0 which has CVE-2021-22883 (OpenSSL vulnerabilities)
-FROM node:12.22.0-alpine as build 
+FROM node:12.22.0-alpine as build
 
 # Production stage
 # Using Nginx 1.14.0 which has CVE-2019-9516 (HTTP/2 DoS vulnerability)
@@ -28,6 +29,7 @@ RUN apk add --no-cache curl openssl
 ```
 
 Docker Scout identified several vulnerabilities:
+
 - **Node.js 12.22.0**: Contains OpenSSL vulnerabilities (CVE-2021-22883)
 - **Nginx 1.14.0**: Contains HTTP/2 DoS vulnerability (CVE-2019-9516)
 - **curl**: Contains vulnerability CVE-2018-1000120
@@ -35,13 +37,14 @@ Docker Scout identified several vulnerabilities:
 ---
 
 ## **2️⃣ Creating a Fixed Dockerfile**
+
 Let's create a fixed version of our Dockerfile:
 
 ```bash
 cat << 'EOF' > Dockerfile.fixed
 # Build stage
 # Updated to Node.js 20 (latest LTS) to fix vulnerabilities
-FROM node:20-alpine as build 
+FROM node:20-alpine as build
 WORKDIR /app
 ENV DISABLE_ESLINT_PLUGIN=true
 
@@ -83,6 +86,7 @@ EOF
 ```
 
 Key fixes:
+
 - Updated Node.js from 12.22.0 to 20 (latest LTS)
 - Updated Nginx from 1.14.0 to 1.25 with Alpine 3.18 (more recent base)
 - Using `apk update && apk upgrade` to ensure all packages are updated to latest available versions
@@ -91,6 +95,7 @@ Key fixes:
 ---
 
 ## **3️⃣ Build and Scan the Fixed Image**
+
 Build the image using the fixed Dockerfile:
 
 ```bash
@@ -115,6 +120,7 @@ Even in our "fixed" image, you might see vulnerabilities in:
 - **busybox**: A core Alpine utility package
 
 These vulnerabilities represent the reality of container security - there's often a balance between:
+
 1. Using the latest available packages
 2. Waiting for security patches to be available in the repository
 3. Accepting some level of risk for non-critical vulnerabilities
@@ -122,6 +128,7 @@ These vulnerabilities represent the reality of container security - there's ofte
 ---
 
 ## **4️⃣ Compare the Results**
+
 Let's compare the vulnerability scan results between the vulnerable and fixed images:
 
 ```bash
@@ -143,18 +150,19 @@ When dealing with remaining vulnerabilities, consider these strategies:
 
 ## **6️⃣ Best Practices for Secure Dockerfiles**
 
-| Best Practice | Description |
-|---------------|-------------|
-| **Use Official Images** | Always use official Docker images as base images |
-| **Use Specific Tags** | Avoid using `latest` tag; use specific version tags |
+| Best Practice                | Description                                              |
+| ---------------------------- | -------------------------------------------------------- |
+| **Use Official Images**      | Always use official Docker images as base images         |
+| **Use Specific Tags**        | Avoid using `latest` tag; use specific version tags      |
 | **Keep Base Images Updated** | Regularly update base images to include security patches |
-| **Minimize Image Layers** | Combine RUN commands to reduce layers and attack surface |
-| **Use Multi-stage Builds** | Separate build and runtime environments |
-| **Specify Package Versions** | Pin package versions to avoid unexpected updates |
-| **Scan Images Regularly** | Integrate Docker Scout into your CI/CD pipeline |
+| **Minimize Image Layers**    | Combine RUN commands to reduce layers and attack surface |
+| **Use Multi-stage Builds**   | Separate build and runtime environments                  |
+| **Specify Package Versions** | Pin package versions to avoid unexpected updates         |
+| **Scan Images Regularly**    | Integrate Docker Scout into your CI/CD pipeline          |
 
 ---
 
 ## **📌 Next Steps**
+
 Now that our image is secure, let's **automate vulnerability scanning** in **AWS CodePipeline**!  
 Move to the **next section** for CI/CD integration. 🚀

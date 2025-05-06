@@ -59,11 +59,13 @@ The final authorization step must be completed in the AWS Console:
    - Only select repositories (recommended)
 8. Select **"Only select repositories"** and click the dropdown
 9. Search for the "Rent-A-Room" repository you forked
-10. Select the repository and click **"Install and authorize"**
+10. Select the repository and click **"Install and Authorize"**
 
 ![Select repository](/images/select-repository.png)
 
-11. Once completed, you'll be redirected back to AWS and the connection status should change to **`Available`**
+11. Click on **Connect**.
+
+12. Once completed, you'll be redirected back to AWS and the connection status should change to **`Available`**
 
 ![CodeStar Connection](/images/codestar-connection.png)
 
@@ -100,7 +102,7 @@ Before we deploy our pipeline, we need to create and push a Dockerfile and relat
 cd /workshop/Rent-A-Room
 
 # Commit and push all files to GitHub
-git add Dockerfile nginx.conf src/ package.json 
+git add Dockerfile nginx.conf src/ package.json
 git commit -m "Add Docker configuration files for CI/CD pipeline"
 git push origin main
 
@@ -128,7 +130,7 @@ fi
 echo "Checking for existing Docker Hub credentials in Secrets Manager..."
 if ! aws secretsmanager describe-secret --secret-id dockerhub-credentials &>/dev/null; then
   echo "Docker Hub credentials secret not found. Creating new secret..."
-  
+
   # Check if environment variables are set
   if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_TOKEN" ]]; then
     echo "Docker Hub environment variables not set."
@@ -136,13 +138,13 @@ if ! aws secretsmanager describe-secret --secret-id dockerhub-credentials &>/dev
     read -s -p "Enter your Docker Hub token: " DOCKER_TOKEN
     echo
   fi
-  
+
   # Create the secret with the provided credentials
   aws secretsmanager create-secret \
     --name dockerhub-credentials \
     --description "Docker Hub credentials for CI/CD pipeline" \
     --secret-string "{\"DOCKER_USERNAME\":\"$DOCKER_USERNAME\",\"DOCKER_TOKEN\":\"$DOCKER_TOKEN\"}"
-  
+
   echo "✅ Docker Hub credentials secret created successfully"
 else
   echo "✅ Docker Hub credentials secret already exists"
@@ -159,7 +161,6 @@ aws cloudformation deploy \
     GitHubBranch=$GITHUB_BRANCH \
     CodeStarConnectionArn=$CONNECTION_ARN \
   --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-  --region us-east-1 \
   --no-fail-on-empty-changeset
 
 # Check the deployment status with improved output formatting
@@ -171,8 +172,8 @@ if [ "$STATUS" == "CREATE_COMPLETE" ] || [ "$STATUS" == "UPDATE_COMPLETE" ]; the
   echo "✅ Deployment successful!"
 
   # Get the pipeline URL for easier access
-  PIPELINE_NAME=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].Outputs[?OutputKey=='PipelineName'].OutputValue" --output text)
-  echo "🔗 Pipeline URL: https://console.aws.amazon.com/codepipeline/home?region=us-east-1#/view/$PIPELINE_NAME"
+  PIPELINE_URL=$(aws cloudformation describe-stacks --stack-name docker-workshop-pipeline --query "Stacks[0].Outputs[?OutputKey=='PipelineURL'].OutputValue" --output text)
+  echo "🔗 Pipeline URL: $PIPELINE_URL"
 else
   echo "⚠️ Deployment status: $STATUS - Check the AWS Console for more details"
 fi
