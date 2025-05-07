@@ -687,7 +687,7 @@ In our pipeline, we've already implemented Docker Scout security scanning, but l
 
 The current CodeBuild project for Docker Scout includes this important configuration:
 
-```yaml
+```
 build:
   commands:
     - echo Running Docker Scout security scan using container image...
