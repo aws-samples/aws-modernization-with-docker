@@ -190,7 +190,7 @@ This CloudFormation template will automatically create:
 
 After the CloudFormation deployment, you'll see the pipeline progress through the Source, Build, Security Scan, and Deploy stages.
 
-Click here to open [**CodePipeline**](console.aws.amazon.com/codesuite/codepipeline/pipelines) in the Console and select your pipeline.
+Click here to open [**CodePipeline**](https://console.aws.amazon.com/codesuite/codepipeline/pipelines) in the Console and select your pipeline.
 
 ![pipeline-execution-home](/images/pipeline-execution.png)
 
