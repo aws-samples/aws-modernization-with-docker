@@ -53,7 +53,7 @@ Think of this as the blueprint for your application. It includes:
 
 Example Task Definition components:
 
-```json
+```
 {
   "family": "web-app",
   "containerDefinitions": [
