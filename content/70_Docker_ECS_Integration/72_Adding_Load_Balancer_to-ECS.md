@@ -380,21 +380,26 @@ Once your basic setup is working, consider these enhancements:
 
    ```bash
    # Enable service auto scaling
-   aws application-autoscaling register-scalable-target \
-       --service-namespace ecs \
-       --resource-id service/rent-a-room-cluster/rent-a-room-service \
-       --scalable-dimension ecs:service:DesiredCount \
-       --min-capacity 1 \
-       --max-capacity 5
+    aws application-autoscaling register-scalable-target \
+        --service-namespace ecs \
+        --resource-id service/rent-a-room-cluster/rent-a-room-service \
+        --scalable-dimension ecs:service:DesiredCount \
+        --min-capacity 1 \
+        --max-capacity 5
        
    # Create scaling policy based on CPU utilization
-   aws application-autoscaling put-scaling-policy \
-       --service-namespace ecs \
-       --resource-id service/rent-a-room-cluster/rent-a-room-service \
-       --scalable-dimension ecs:service:DesiredCount \
-       --policy-name cpu-scaling-policy \
-       --policy-type TargetTrackingScaling \
-       --target-tracking-scaling-policy-configuration '{"TargetValue": 70.0, "PredefinedMetricSpecification": {"PredefinedMetricType": "ECSServiceAverageCPUUtilization"}}'
+    aws application-autoscaling put-scaling-policy \
+        --service-namespace ecs \
+        --resource-id service/rent-a-room-cluster/rent-a-room-service \
+        --scalable-dimension ecs:service:DesiredCount \
+        --policy-name cpu-scaling-policy \
+        --policy-type TargetTrackingScaling \
+        --target-tracking-scaling-policy-configuration '{
+            "TargetValue": 70.0,
+            "PredefinedMetricSpecification": {
+                "PredefinedMetricType": "ECSServiceAverageCPUUtilization"
+            }
+        }'
    ```
 
 4. **Access Logging**:
