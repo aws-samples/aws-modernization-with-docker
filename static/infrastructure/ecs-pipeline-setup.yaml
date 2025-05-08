@@ -195,71 +195,73 @@ Resources:
             files:
               - imagedefinitions.json
 
-    DockerScoutProject:
-      Type: AWS::CodeBuild::Project
-      Properties:
-        Name: docker-scout-scan-project
-        Description: "Scan Docker image using Docker Scout"
-        ServiceRole: !GetAtt CodeBuildServiceRole.Arn
-        Artifacts:
-          Type: CODEPIPELINE
-        Environment:
-          Type: ARM_CONTAINER
-          ComputeType: BUILD_GENERAL1_SMALL
-          Image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
-          PrivilegedMode: true
-        Source:
-          Type: CODEPIPELINE
-          BuildSpec: |
-            version: 0.2
-  
-            env:
-              secrets-manager:
-                DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
-                DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
-  
-            phases:
-              pre_build:
-                commands:
-                  - echo Logging in to Docker Hub...
-                  - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
-                  - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-                  - IMAGE_TAG=${COMMIT_HASH:=latest}
-              
-              build:
-                commands:
-                  - echo Running Docker Scout security scan...
-                  - >
-                    docker run --rm 
-                    -v /var/run/docker.sock:/var/run/docker.sock
-                    -u root
-                    -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-                    -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
-                    docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG 
-                    --exit-code --only-severity critical,high
-                  - echo "No critical or high vulnerabilities found. Scan passed!"
-              
-              post_build:
-                commands:
-                  - echo Security scan completed
-                  - echo Generating security report...
-                  - >
-                    docker run --rm 
-                    -v /var/run/docker.sock:/var/run/docker.sock
-                    -u root
-                    -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-                    -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
-                    docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG 
-                    --format json > security-report.json
-                  - echo "Creating imagedefinitions.json file"
-                  - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
-                  - echo "Security Report Contents:"
-                  - cat security-report.json
-  
-            artifacts:
-              files:
-                - security-report.json
-                - imagedefinitions.json
+  DockerScoutProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: docker-scout-scan-project
+      Description: "Scan Docker image using Docker Scout"
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: ARM_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
+        PrivilegedMode: true
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+
+          env:
+            secrets-manager:
+              DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
+              DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+
+          phases:
+            pre_build:
+              commands:
+                - echo Logging in to Docker Hub...
+                - echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
+                - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+                - IMAGE_TAG=${COMMIT_HASH:=latest}
+            
+            build:
+              commands:
+                - echo Running Docker Scout security scan...
+                - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
+                # Run Docker Scout with security gates - this will exit with non-zero code if vulnerabilities found
+                - |
+                  echo "==== SECURITY GATE CHECK ===="
+                  if docker run --rm -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --exit-code --only-severity critical,high; then
+                    echo "✅ Security gate passed - No critical or high vulnerabilities found"
+                  else
+                    echo "❌ Security gate failed - Critical or high vulnerabilities found"
+                    echo "🛑 Pipeline halted: Vulnerable image will not be deployed to production"
+                    exit 1
+                  fi
+            
+            post_build:
+              commands:
+                - echo Security scan completed
+                - echo Generating security report...
+                - echo Generating security report...
+                # Generate security report using Docker Scout
+                - >
+                  docker run --rm 
+                  -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
+                  -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
+                  docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --format json > security-report.json
+                - echo "Creating imagedefinitions.json file"
+                - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
+                - ls -la
+                - echo "Security Report Contents:"
+                - cat security-report.json
+
+          artifacts:
+            files:
+              - security-report.json
+              - imagedefinitions.json
 
   # CodePipeline
   Pipeline:
