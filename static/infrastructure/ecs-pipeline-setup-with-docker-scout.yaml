@@ -255,6 +255,9 @@ Resources:
                   -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
                   -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
                   docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --format json > security-report.json || echo '{"vulnerabilities":[]}' > security-report.json
+                - echo "Security Report Contents:"
+                - jq '.' security-report.json
+                - cat security-report.json
                 - echo "Creating imagedefinitions.json file"
                 - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
                 - ls -la
