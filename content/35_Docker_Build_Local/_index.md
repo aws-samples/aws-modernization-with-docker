@@ -149,7 +149,7 @@ Update both package.json and App.js to handle different environments:
 sed -i '/function App() {/a\  const isVSCodeServer = window.location.href.includes('\''cloudfront.net'\'');\n  const basename = isVSCodeServer ? '\''/proxy/3000'\'' : '\''/'\'';' src/App.js
 
 # Update Router to use basename
-sed -i 's/<Router>/<Router basename={basename}>/' src/App.js
+sed -i 's/<[Rr]outer>/<Router basename={basename}>/g' src/App.js
 
 # Update package.json to add homepage
 sed -i '/"private": true,/a\  "homepage": ".",' package.json
