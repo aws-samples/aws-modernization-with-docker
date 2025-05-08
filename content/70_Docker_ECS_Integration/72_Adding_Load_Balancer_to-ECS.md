@@ -414,8 +414,68 @@ Once your basic setup is working, consider these enhancements:
         }'
    ```
 
-4. **Access Logging**:
-   Enable to capture detailed information about requests for troubleshooting
+### **4️⃣ Verify Your Auto Scaling Setup**
+
+After setting up auto scaling, it's important to verify that your tasks are running as expected.
+
+#### Using AWS Console:
+1. Go to the [ECS console](https://console.aws.amazon.com/ecs/)
+2. Select your cluster **rent-a-room-cluster**
+3. Select your service **rent-a-room-service**
+4. Under the **Tasks** tab, you should see multiple tasks running
+5. Check the **Events** tab for scaling activities
+
+#### Using AWS CLI:
+```bash
+# Verify the number of running tasks
+echo "Checking running tasks..."
+aws ecs describe-services \
+    --cluster rent-a-room-cluster \
+    --services rent-a-room-service \
+    --query 'services[0].{desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
+    --output table
+
+# List all running tasks and their status
+echo -e "\nListing all tasks:"
+aws ecs list-tasks \
+    --cluster rent-a-room-cluster \
+    --service-name rent-a-room-service \
+    --query 'taskArns[*]' \
+    --output table
+
+# Get detailed task information including IP addresses
+echo -e "\nDetailed task information:"
+TASK_ARNS=$(aws ecs list-tasks \
+    --cluster rent-a-room-cluster \
+    --service-name rent-a-room-service \
+    --query 'taskArns[*]' \
+    --output text)
+
+if [ ! -z "$TASK_ARNS" ]; then
+    aws ecs describe-tasks \
+        --cluster rent-a-room-cluster \
+        --tasks $TASK_ARNS \
+        --query 'tasks[*].{TaskId:taskArn,Status:lastStatus,IP:attachments[0].details[?name==`privateIPv4Address`].value[0]}' \
+        --output table
+fi
+```
+
+### Understanding the Output
+
+The verification commands provide several key pieces of information:
+
+#### Service Overview
+- `desiredCount`: Number of tasks you want running
+- `runningCount`: Current number of tasks actually running
+- `pendingCount`: Tasks in the process of starting
+
+#### Task List
+- Shows all task ARNs currently registered with the service
+- Helps verify the correct number of tasks are created
+
+#### Detailed Task Information
+- `TaskId`: Unique identifier for each task
+- `Status`: Current state of the task (RUNNING, PENDING, etc.)
 
 ## **💡 Key Takeaways**
 
@@ -432,5 +492,8 @@ Now that you've:
 - ✅ Created a stable endpoint for your application
 - ✅ Set up health checks and traffic distribution
 - ✅ Learned how IP changes are handled seamlessly
+- ✅ Set up auto scaling for your ECS service
+- ✅ Verified multiple tasks are running
+- ✅ Learned how to monitor your scaled service
 
 ✨ Continue to CI/CD Pipeline Setup ▶️
