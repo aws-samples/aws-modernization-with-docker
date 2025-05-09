@@ -227,7 +227,7 @@ docker buildx inspect --bootstrap
 
 You should see output indicating your builder is using the Docker Build Cloud driver like this:
 
-```bash
+```
 +] Building 6.7s (1/1) FINISHED
  => [internal] booting buildkit                                                                                                      6.7s
  => => pulling image moby/buildkit:buildx-stable-1                                                                                   5.8s
