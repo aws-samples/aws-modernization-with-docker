@@ -398,6 +398,8 @@ Once your basic setup is working, consider these enhancements:
         --scalable-dimension ecs:service:DesiredCount \
         --min-capacity 1 \
         --max-capacity 5
+
+   sleep 20
        
    # Create scaling policy based on CPU utilization
     aws application-autoscaling put-scaling-policy \
