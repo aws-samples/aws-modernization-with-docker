@@ -378,10 +378,10 @@ rent-a-room                    latest    0b9c31de0251   5 minutes ago   111MB
 
 #### **Verify the Image on Docker Hub**
 
-After pushing, you can verify that your image is available on Docker Hub by visiting:
+After pushing, you can verify that your image is available on Docker Hub by clicking on this link:
 
-```
-https://hub.docker.com/r/YOUR-USERNAME/rent-a-room
+```sh
+echo https://hub.docker.com/r/$DOCKER_USERNAME/rent-a-room
 ```
 
 Or by navigating to Docker Hub in your browser and checking your repositories.
