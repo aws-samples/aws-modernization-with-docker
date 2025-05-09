@@ -10,10 +10,12 @@ To prevent unexpected charges to your AWS account, it's essential to clean up al
 
 ## 🚀 Creating and Running the Cleanup Script
 
+Navigate to the AWS Management Console and ensure you're in the correct region where your CloudFormation stack was previously deployed. Then, open CloudShell by clicking the icon located in the top navigation bar:
+![CloudShell](/images/CloudShellTopBar.png)
+
 Copy and paste the following commands to create, make executable, and run the cleanup script:
 
 ```bash
-# Create the cleanup script
 cat << 'EOF' > cleanup-workshop.sh
 #!/bin/bash
 echo "🧹 Starting comprehensive workshop cleanup..."
@@ -43,10 +45,10 @@ if [ -n "$ECS_CLUSTERS" ]; then
   for cluster in $ECS_CLUSTERS; do
     # Get cluster name from ARN
     CLUSTER_NAME=$(echo $cluster | awk -F/ '{print $2}')
-    
+
     # List services in the cluster
     SERVICES=$(aws ecs list-services --cluster $CLUSTER_NAME --query "serviceArns[]" --output text)
-    
+
     # Delete services first
     if [ -n "$SERVICES" ]; then
       for service in $SERVICES; do
@@ -57,7 +59,11 @@ if [ -n "$ECS_CLUSTERS" ]; then
         aws ecs delete-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force
       done
     fi
-    
+
+    # Wait for services to be deleted
+    echo "⏳ Waiting for services to be deleted..."
+    sleep 30
+
     # Delete the cluster
     echo "🗑️ Deleting ECS cluster $CLUSTER_NAME..."
     aws ecs delete-cluster --cluster $CLUSTER_NAME
@@ -76,7 +82,7 @@ if [ -n "$LOAD_BALANCERS" ]; then
     echo "🗑️ Deleting Load Balancer $lb..."
     aws elbv2 delete-load-balancer --load-balancer-arn $lb
   done
-  
+
   # Wait a bit for load balancers to be deleted
   echo "⏳ Waiting for load balancers to be deleted..."
   sleep 30
@@ -134,25 +140,29 @@ if [ -n "$S3_BUCKETS" ]; then
   echo "🗑️ Deleting S3 buckets..."
   for bucket in $S3_BUCKETS; do
     echo "🗑️ Emptying and deleting S3 bucket $bucket..."
-    aws s3 rm s3://$bucket --recursive
+    # Delete all versions of all objects
+    echo "🗑️ Removing all object versions from bucket..."
+    aws s3api list-object-versions --bucket $bucket --output json --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' | grep -v "null" > /tmp/versions-$bucket.json
+    if [ -s /tmp/versions-$bucket.json ]; then
+      aws s3api delete-objects --bucket $bucket --delete file:///tmp/versions-$bucket.json
+    fi
+
+    # Delete all delete markers
+    echo "🗑️ Removing all delete markers from bucket..."
+    aws s3api list-object-versions --bucket $bucket --output json --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' | grep -v "null" > /tmp/markers-$bucket.json
+    if [ -s /tmp/markers-$bucket.json ]; then
+      aws s3api delete-objects --bucket $bucket --delete file:///tmp/markers-$bucket.json
+    fi
+
+    # Now delete the bucket itself
+    echo "🗑️ Deleting bucket $bucket..."
     aws s3api delete-bucket --bucket $bucket
+
+    # Clean up temporary files
+    rm -f /tmp/versions-$bucket.json /tmp/markers-$bucket.json
   done
 else
   echo "ℹ️ No matching S3 buckets found"
-fi
-
-# Find and delete CodeStar connections
-echo "🔍 Finding CodeStar connections..."
-CONNECTIONS=$(aws codestar-connections list-connections --query "Connections[?ConnectionName!=null].ConnectionArn" --output text)
-
-if [ -n "$CONNECTIONS" ]; then
-  echo "🗑️ Deleting CodeStar connections..."
-  for connection in $CONNECTIONS; do
-    echo "🗑️ Deleting CodeStar connection $connection..."
-    aws codestar-connections delete-connection --connection-arn $connection
-  done
-else
-  echo "ℹ️ No CodeStar connections found"
 fi
 
 # Find and delete Secrets Manager secrets
@@ -196,9 +206,9 @@ else
   echo "ℹ️ No matching Auto Scaling targets found"
 fi
 
-# Find and delete IAM roles
+# Find and delete IAM roles (excluding AWS service-linked roles)
 echo "🔍 Finding IAM roles related to the workshop..."
-IAM_ROLES=$(aws iam list-roles --query "Roles[?contains(RoleName, 'CodeBuild') || contains(RoleName, 'CodePipeline') || contains(RoleName, 'ECS') || contains(RoleName, 'docker-workshop')].RoleName" --output text)
+IAM_ROLES=$(aws iam list-roles --query "Roles[?(!contains(RoleName, 'AWSServiceRole')) && (contains(RoleName, 'CodeBuild') || contains(RoleName, 'CodePipeline') || contains(RoleName, 'ECS') || contains(RoleName, 'docker-workshop'))].RoleName" --output text)
 
 if [ -n "$IAM_ROLES" ]; then
   echo "🗑️ Deleting IAM roles..."
@@ -209,13 +219,13 @@ if [ -n "$IAM_ROLES" ]; then
       echo "🗑️ Detaching policy $policy from role $role..."
       aws iam detach-role-policy --role-name $role --policy-arn $policy
     done
-    
+
     # Delete role
     echo "🗑️ Deleting IAM role $role..."
     aws iam delete-role --role-name $role
   done
 else
-  echo "ℹ️ No matching IAM roles found"
+  echo "ℹ️ No matching deletable IAM roles found"
 fi
 
 # Find and delete EC2 security groups
@@ -225,8 +235,16 @@ SECURITY_GROUPS=$(aws ec2 describe-security-groups --query "SecurityGroups[?cont
 if [ -n "$SECURITY_GROUPS" ]; then
   echo "🗑️ Deleting EC2 security groups..."
   for sg in $SECURITY_GROUPS; do
-    echo "🗑️ Deleting security group $sg..."
-    aws ec2 delete-security-group --group-id $sg
+    # Check for dependencies
+    DEPENDENCIES=$(aws ec2 describe-network-interfaces --filters "Name=group-id,Values=$sg" --query 'NetworkInterfaces[].NetworkInterfaceId' --output text)
+
+    if [ -n "$DEPENDENCIES" ]; then
+      echo "⚠️ Security group $sg has dependencies: $DEPENDENCIES"
+      echo "ℹ️ Please manually check and remove dependencies before deleting this security group"
+    else
+      echo "🗑️ Deleting security group $sg..."
+      aws ec2 delete-security-group --group-id $sg
+    fi
   done
 else
   echo "ℹ️ No matching EC2 security groups found"
@@ -251,6 +269,8 @@ chmod +x cleanup-workshop.sh
 # Run the cleanup script
 ./cleanup-workshop.sh
 ```
+
+Please note that in the above command you will need to use `q` on the keyboard to quite from the output of command output to go on to the next delete.
 
 ## 📋 What the Cleanup Script Does
 

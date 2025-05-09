@@ -279,7 +279,7 @@ else
     --names rent-a-room-alb \
     --query 'LoadBalancers[0].State.Code' \
     --output text 2>/dev/null || echo "Not Found")
-  
+
   if [ "$LB_STATUS" == "active" ]; then
     echo "Load balancer is active but couldn't retrieve DNS name. Check the AWS console."
   elif [ "$LB_STATUS" == "Not Found" ]; then
@@ -301,7 +301,7 @@ if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
     --target-group-arn "$TG_ARN" \
     --query 'TargetHealthDescriptions[].TargetHealth.State' \
     --output text)
-    
+
   echo "Target health: $HEALTH"
   if [ "$HEALTH" == "healthy" ]; then
     echo "✅ Your application is running properly and receiving traffic via the load balancer!"
@@ -438,17 +438,20 @@ echo "The application is still running with the previous secure deployment"
 Our current pipeline uses a basic deployment strategy, but in production environments, you might consider implementing more sophisticated approaches:
 
 **Blue/Green Deployments**
+
 - Create a completely new set of containers (green) alongside the existing ones (blue)
 - Test the new environment thoroughly
 - Switch traffic from blue to green once verified
 - Allows for immediate rollback by switching back to blue
 
 To implement blue/green deployments with ECS and CodePipeline:
+
 1. Create two target groups in your load balancer
 2. Configure your ECS service to use CodeDeploy for deployments
 3. Set up a deployment configuration that creates a new task set and gradually shifts traffic
 
 **Canary Deployments**
+
 - A specific type of blue/green deployment where traffic is shifted in two increments
 - Initially route a small percentage of traffic to the new version
 - Monitor for any issues or degradation in performance
@@ -456,6 +459,7 @@ To implement blue/green deployments with ECS and CodePipeline:
 - Roll back quickly if problems are detected
 
 To implement canary deployments with ECS:
+
 1. Use AWS CodeDeploy with ECS for blue/green deployments
 2. Select the "canary" traffic routing configuration
 3. Specify the initial traffic percentage and interval for the canary
@@ -463,6 +467,7 @@ To implement canary deployments with ECS:
 5. Configure automatic rollback if alarms are triggered
 
 These advanced deployment strategies would further enhance our pipeline by:
+
 - Eliminating downtime during deployments
 - Providing a safe testing environment for new versions
 - Enabling fast rollbacks if issues are discovered after deployment
@@ -762,7 +767,17 @@ This time, the pipeline should complete successfully, including the Security Sca
 
 ### 📸 Room Listings Transformation
 
-Let's see the impact of the Room Listings team's changes:
+Let's see the impact of the Room Listings team's changes. You can see the updated website by refreshing the previous webpage or by running the following command to get the link to the hosted website:
+
+```
+# Get the load balancer DNS name
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+    --names rent-a-room-alb \
+    --query 'LoadBalancers[0].DNSName' \
+    --output text)
+
+echo "✅ Application URL: http://$ALB_DNS"
+```
 
 ![Rooms Page Before](/images/rooms-before.png)
 _Before: Simple list of rooms with basic information_
@@ -776,19 +791,19 @@ The Room Listings team has successfully transformed the browsing experience, mak
 
 Let's take a closer look at how the security gate is implemented in our pipeline. The key configuration is in the Docker Scout CodeBuild project:
 
-```yaml
+```
 build:
   commands:
     - echo Running Docker Scout security scan...
     - docker pull $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
     # Run Docker Scout with security gates
     - >
-      docker run --rm 
+      docker run --rm
       -v /var/run/docker.sock:/var/run/docker.sock
       -u root
-      -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME 
-      -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN 
-      docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG 
+      -e DOCKER_SCOUT_HUB_USER=$DOCKER_USERNAME
+      -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_TOKEN
+      docker/scout-cli cves $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG
       --exit-code --only-severity critical,high
 ```
 
