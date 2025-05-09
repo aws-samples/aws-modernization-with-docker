@@ -10,22 +10,23 @@ weight: 1
 
 ### Welcome!
 
-In this workshop you will learn how to build and deploy applications with Docker and Amazon ECS using the new Docker Compose CLI tool developed in partnership with AWS and Docker. We will also learn about modernization best practices like how to secure secrets, CI/CD, and deploying our application using serverless containers on AWS Fargate. 
+In this workshop you will learn how to build and deploy applications with Docker and Amazon ECS using the Docker ECS Integration. You'll experience the seamless workflow from local development to production deployment, leveraging the combined power of Docker and AWS technologies.
 
-Docker is an open platform for developing, shipping, and running applications. Docker enables you to separate your applications from your infrastructure so you can deliver software quickly. With Docker, you can manage your infrastructure in the same ways you manage your applications. By taking advantage of Docker’s methodologies for shipping, testing, and deploying code quickly, you can significantly reduce the delay between writing code and running it in production.
+Docker is an open platform for developing, shipping, and running applications. Docker enables you to separate your applications from your infrastructure so you can deliver software quickly. With Docker, you can manage your infrastructure in the same ways you manage your applications. By taking advantage of Docker's methodologies for shipping, testing, and deploying code quickly, you can significantly reduce the delay between writing code and running it in production.
 
 ### Learning Objectives
-- Deploy an application using the Docker Compose ECS Integration
-- Build your own image using Docker Buildkit and how to deploy that image to Amazon ECS.
-- Container security using AWS Secrets Manager
-- CI/CD using the Amazon ECS plugin for GitHub Actions
-- Serverless Containers using AWS Fargate 
+- Deploy an application using the Docker ECS Integration
+- Build multi-architecture container images using Docker Build Cloud
+- Implement container security scanning with Docker Scout
+- Create a complete CI/CD pipeline with AWS CodePipeline and Docker technologies
+- Deploy containerized applications to Amazon ECS with load balancing
+- Implement security gates in your deployment pipeline
+- Understand advanced deployment strategies like blue/green and canary deployments
 
 ## Who should take this workshop?
 - Developers 
 - DevOps Engineers
 - Solutions Architects
-- Site Reliability Engineers (SRE's) 
+- Site Reliability Engineers (SREs)
+- Security Engineers
 - Anyone that loves containers and wants to learn more!
-  
-

@@ -20,11 +20,11 @@ echo "🧹 Starting comprehensive workshop cleanup..."
 
 # Find and delete all CloudFormation stacks related to the workshop
 echo "🔍 Finding CloudFormation stacks..."
-PIPELINE_STACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE --query "StackSummaries[?contains(StackName, 'ECSPipeline') || contains(StackName, 'Pipeline') || contains(StackName, 'mod-')].StackName" --output text)
+STACKS_TO_DELETE=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE --query "StackSummaries[?contains(StackName, 'docker-workshop') || contains(StackName, 'ECSPipeline') || contains(StackName, 'Pipeline') || contains(StackName, 'mod-') || contains(StackName, 'vscode-server')].StackName" --output text)
 
-if [ -n "$PIPELINE_STACK" ]; then
-  echo "🗑️ Deleting CloudFormation stack(s): $PIPELINE_STACK"
-  for stack in $PIPELINE_STACK; do
+if [ -n "$STACKS_TO_DELETE" ]; then
+  echo "🗑️ Deleting CloudFormation stack(s): $STACKS_TO_DELETE"
+  for stack in $STACKS_TO_DELETE; do
     aws cloudformation delete-stack --stack-name $stack
     echo "⏳ Waiting for stack $stack to be deleted..."
     aws cloudformation wait stack-delete-complete --stack-name $stack
@@ -66,6 +66,38 @@ else
   echo "ℹ️ No matching ECS clusters found"
 fi
 
+# Find and delete Load Balancers
+echo "🔍 Finding Load Balancers..."
+LOAD_BALANCERS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[?contains(LoadBalancerName, 'rent-a-room') || contains(LoadBalancerName, 'workshop')].LoadBalancerArn" --output text)
+
+if [ -n "$LOAD_BALANCERS" ]; then
+  echo "🗑️ Deleting Load Balancers..."
+  for lb in $LOAD_BALANCERS; do
+    echo "🗑️ Deleting Load Balancer $lb..."
+    aws elbv2 delete-load-balancer --load-balancer-arn $lb
+  done
+  
+  # Wait a bit for load balancers to be deleted
+  echo "⏳ Waiting for load balancers to be deleted..."
+  sleep 30
+else
+  echo "ℹ️ No matching Load Balancers found"
+fi
+
+# Find and delete Target Groups
+echo "🔍 Finding Target Groups..."
+TARGET_GROUPS=$(aws elbv2 describe-target-groups --query "TargetGroups[?contains(TargetGroupName, 'rent-a-room') || contains(TargetGroupName, 'workshop')].TargetGroupArn" --output text)
+
+if [ -n "$TARGET_GROUPS" ]; then
+  echo "🗑️ Deleting Target Groups..."
+  for tg in $TARGET_GROUPS; do
+    echo "🗑️ Deleting Target Group $tg..."
+    aws elbv2 delete-target-group --target-group-arn $tg
+  done
+else
+  echo "ℹ️ No matching Target Groups found"
+fi
+
 # Find and delete CodeBuild projects
 echo "🔍 Finding CodeBuild projects..."
 CODEBUILD_PROJECTS=$(aws codebuild list-projects --query "projects[?contains(@, 'docker') || contains(@, 'scout') || contains(@, 'build')]" --output text)
@@ -96,7 +128,7 @@ fi
 
 # Find and delete S3 buckets
 echo "🔍 Finding S3 buckets related to the workshop..."
-S3_BUCKETS=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'codepipeline') || contains(Name, 'artifact')].Name" --output text)
+S3_BUCKETS=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'codepipeline') || contains(Name, 'artifact') || contains(Name, 'docker-workshop')].Name" --output text)
 
 if [ -n "$S3_BUCKETS" ]; then
   echo "🗑️ Deleting S3 buckets..."
@@ -125,7 +157,7 @@ fi
 
 # Find and delete Secrets Manager secrets
 echo "🔍 Finding Secrets Manager secrets..."
-SECRETS=$(aws secretsmanager list-secrets --query "SecretList[?contains(Name, 'docker') || contains(Name, 'github')].Name" --output text)
+SECRETS=$(aws secretsmanager list-secrets --query "SecretList[?contains(Name, 'docker') || contains(Name, 'github') || contains(Name, 'dockerhub')].Name" --output text)
 
 if [ -n "$SECRETS" ]; then
   echo "🗑️ Deleting Secrets Manager secrets..."
@@ -137,9 +169,36 @@ else
   echo "ℹ️ No matching Secrets Manager secrets found"
 fi
 
+# Find and delete Auto Scaling policies and targets
+echo "🔍 Finding Auto Scaling policies..."
+SCALING_POLICIES=$(aws application-autoscaling describe-scaling-policies --service-namespace ecs --query "ScalingPolicies[?contains(ResourceId, 'rent-a-room')].PolicyARN" --output text 2>/dev/null || echo "")
+
+if [ -n "$SCALING_POLICIES" ]; then
+  echo "🗑️ Deleting Auto Scaling policies..."
+  for policy in $SCALING_POLICIES; do
+    echo "🗑️ Deleting Auto Scaling policy $policy..."
+    aws application-autoscaling delete-scaling-policy --service-namespace ecs --policy-name $(echo $policy | awk -F/ '{print $NF}') --resource-id $(echo $policy | awk -F: '{print $6}' | awk -F/ '{print $2"/"$3}') --scalable-dimension ecs:service:DesiredCount
+  done
+else
+  echo "ℹ️ No matching Auto Scaling policies found"
+fi
+
+echo "🔍 Finding Auto Scaling targets..."
+SCALING_TARGETS=$(aws application-autoscaling describe-scalable-targets --service-namespace ecs --query "ScalableTargets[?contains(ResourceId, 'rent-a-room')].ResourceId" --output text 2>/dev/null || echo "")
+
+if [ -n "$SCALING_TARGETS" ]; then
+  echo "🗑️ Deregistering Auto Scaling targets..."
+  for target in $SCALING_TARGETS; do
+    echo "🗑️ Deregistering Auto Scaling target $target..."
+    aws application-autoscaling deregister-scalable-target --service-namespace ecs --resource-id $target --scalable-dimension ecs:service:DesiredCount
+  done
+else
+  echo "ℹ️ No matching Auto Scaling targets found"
+fi
+
 # Find and delete IAM roles
 echo "🔍 Finding IAM roles related to the workshop..."
-IAM_ROLES=$(aws iam list-roles --query "Roles[?contains(RoleName, 'CodeBuild') || contains(RoleName, 'CodePipeline') || contains(RoleName, 'ECS')].RoleName" --output text)
+IAM_ROLES=$(aws iam list-roles --query "Roles[?contains(RoleName, 'CodeBuild') || contains(RoleName, 'CodePipeline') || contains(RoleName, 'ECS') || contains(RoleName, 'docker-workshop')].RoleName" --output text)
 
 if [ -n "$IAM_ROLES" ]; then
   echo "🗑️ Deleting IAM roles..."
@@ -159,10 +218,24 @@ else
   echo "ℹ️ No matching IAM roles found"
 fi
 
+# Find and delete EC2 security groups
+echo "🔍 Finding EC2 security groups related to the workshop..."
+SECURITY_GROUPS=$(aws ec2 describe-security-groups --query "SecurityGroups[?contains(GroupName, 'rent-a-room') || contains(GroupName, 'workshop')].GroupId" --output text)
+
+if [ -n "$SECURITY_GROUPS" ]; then
+  echo "🗑️ Deleting EC2 security groups..."
+  for sg in $SECURITY_GROUPS; do
+    echo "🗑️ Deleting security group $sg..."
+    aws ec2 delete-security-group --group-id $sg
+  done
+else
+  echo "ℹ️ No matching EC2 security groups found"
+fi
+
 # Clean up local repository
 echo "🧹 Cleaning up local Git repository..."
-if [ -d "Rent-A-Room" ]; then
-  cd Rent-A-Room
+if [ -d "/workshop/Rent-A-Room" ]; then
+  cd /workshop/Rent-A-Room
   git remote -v | grep origin | grep -q github.com && echo "ℹ️ Consider deleting your GitHub fork of Rent-A-Room if no longer needed"
   cd ..
 fi
@@ -183,15 +256,18 @@ chmod +x cleanup-workshop.sh
 
 The script automatically:
 
-1. **Finds and deletes CloudFormation stacks** related to the workshop
+1. **Finds and deletes CloudFormation stacks** related to the workshop, including the VS Code server stack
 2. **Cleans up ECS resources** including clusters and services
-3. **Removes CodeBuild projects** created during the workshop
-4. **Deletes CodePipeline pipelines** used for CI/CD
-5. **Empties and removes S3 buckets** used for artifacts
-6. **Deletes CodeStar connections** to GitHub
-7. **Removes Secrets Manager secrets** for Docker Hub and GitHub
-8. **Cleans up IAM roles** created for the workshop services
-9. **Provides guidance** on cleaning up your GitHub fork
+3. **Removes Load Balancers and Target Groups** created for the application
+4. **Deletes CodeBuild projects** created during the workshop
+5. **Removes CodePipeline pipelines** used for CI/CD
+6. **Empties and removes S3 buckets** used for artifacts
+7. **Deletes CodeStar connections** to GitHub
+8. **Removes Secrets Manager secrets** for Docker Hub and GitHub
+9. **Cleans up Auto Scaling policies and targets** configured for the ECS service
+10. **Removes IAM roles** created for the workshop services
+11. **Deletes EC2 security groups** created for the application
+12. **Provides guidance** on cleaning up your GitHub fork
 
 ## ⚠️ Manual Verification
 
@@ -199,8 +275,11 @@ After running the script, it's always a good practice to verify in the AWS Conso
 
 1. Check the CloudFormation console for any remaining stacks
 2. Verify in the ECS console that clusters and services are removed
-3. Check CodePipeline and CodeBuild for any remaining resources
-4. Look for any S3 buckets that might have been created during the workshop
+3. Check the EC2 console for any remaining load balancers, target groups, or security groups
+4. Look for any remaining CodePipeline, CodeBuild, or CodeStar resources
+5. Verify that all S3 buckets related to the workshop have been deleted
+6. Check Secrets Manager for any remaining secrets
+7. Look for any remaining IAM roles or policies
 
 ## 🎉 Workshop Completion
 
@@ -211,5 +290,6 @@ Congratulations on completing the AWS and Docker: Better Together workshop! You'
 - Integrate security scanning with Docker Scout
 - Deploy containerized applications to Amazon ECS
 - Define infrastructure as code with AWS CloudFormation
+- Implement advanced deployment strategies like blue/green and canary deployments
 
 We hope you found this workshop valuable and that you'll apply these techniques in your own projects!
