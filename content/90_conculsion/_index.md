@@ -19,6 +19,7 @@ This workshop has demonstrated the powerful integration between AWS services and
 - **Seamless Integration**: AWS CodePipeline orchestrates the entire CI/CD process while leveraging Docker's build and security capabilities
 - **Multi-Architecture Support**: Docker Build Cloud enables building images for multiple architectures (amd64, arm64) without specialized infrastructure
 - **Automated Workflow**: Code changes automatically trigger builds, security scans, and deployments
+- **Security Gates**: Docker Scout prevents vulnerable images from being deployed to production
 
 ### 2️⃣ Security with Docker Scout
 
@@ -27,6 +28,7 @@ This workshop has demonstrated the powerful integration between AWS services and
 - **Integrated Security Scanning**: Docker Scout provides vulnerability scanning directly in the pipeline
 - **Actionable Insights**: Detailed security recommendations help developers address vulnerabilities
 - **Shift-Left Security**: Security scanning happens early in the development process, not just at deployment time
+- **Automated Policy Enforcement**: Security gates ensure only secure images reach production
 
 ### 3️⃣ Container Orchestration with Amazon ECS
 
@@ -35,6 +37,7 @@ This workshop has demonstrated the powerful integration between AWS services and
 - **Managed Container Service**: ECS handles container orchestration, scaling, and management
 - **Simplified Deployment**: The pipeline automatically updates ECS services with new container images
 - **High Availability**: ECS ensures your application remains available during updates
+- **Load Balancing**: Application Load Balancer provides stable endpoints and traffic distribution
 
 ### 4️⃣ Infrastructure as Code with CloudFormation
 
@@ -43,6 +46,7 @@ This workshop has demonstrated the powerful integration between AWS services and
 - **Reproducible Infrastructure**: The entire pipeline and deployment infrastructure is defined as code
 - **Version Control**: Infrastructure changes can be tracked alongside application code
 - **Consistency**: Ensures development, testing, and production environments remain consistent
+- **Advanced Deployment Strategies**: Support for blue/green and canary deployments
 
 ## 💼 Business Value
 
@@ -100,6 +104,7 @@ After: Reliable, automated deployments with comprehensive logging
 - **Automated deployments** reduce human error
 - **Comprehensive monitoring and logging** for troubleshooting
 - **Standardized processes** ensure consistent operations
+- **Advanced deployment strategies** minimize risk and downtime
 
 ## 🤝 AWS and Docker: The Power of Integration
 

@@ -6,21 +6,30 @@ weight = 102
 
 ### Well Done
 
-🎉 Congratulations! 🎉 You have completed today's worshop on migrating and modernizing on AWS! 
+🎉 Congratulations! 🎉 You have completed the AWS Modernization with Docker workshop! 
 
 ### Recap on what you have learned
-Today we've learned:
+Today you've learned:
 
-+ How to use docker compose cli to build , run the application locally and push image to docker hub
-+ How to overlay docker compose files and use docker compose ECS integration to seamlessly deploy the application to Amazon ECS in an opininated manner.
-+ What are the different resources created on ECS with no effort and how it maps to the local developer experience
-+ Modernized the application using native AWS services
-+ Enabled Continuous Integration and Deployment for docker compose using AWS codepipeline
++ How to deploy applications to Amazon ECS using the Docker ECS integration
++ How to build multi-architecture container images using Docker Build Cloud
++ How to implement container security scanning with Docker Scout
++ How to create security gates in your CI/CD pipeline to prevent vulnerable images from being deployed
++ How to set up a complete CI/CD pipeline with AWS CodePipeline and Docker technologies
++ How to deploy containerized applications to Amazon ECS with load balancing
++ How advanced deployment strategies like blue/green and canary deployments work
 
 ### Final Thoughts
-We hope you have seen some of the wins your organization can have while using the docker compose cli integration with ECS. Reach out if you have any questions via https://github.com/aws-samples/aws-modernization-with-docker/issues/new.
+We hope you've seen how AWS and Docker work better together to create a seamless, secure, and efficient application development and deployment experience. The integration between Docker's container technologies and AWS's cloud infrastructure provides a powerful platform for modern application development.
 
+### Next Steps
 
-### Next Steps [TODO]
+To continue your journey with AWS and Docker:
 
+1. **Explore Docker Scout in depth**: Learn more about SBOM analysis and advanced vulnerability management
+2. **Implement automated testing**: Add test stages to your pipeline for improved quality assurance
+3. **Try AWS App Runner**: Experience an even simpler way to deploy containerized applications
+4. **Implement blue/green deployments**: Set up zero-downtime deployments for your production applications
+5. **Join the Docker and AWS communities**: Connect with other developers and share your experiences
 
+If you have any questions or feedback about this workshop, please reach out via https://github.com/aws-samples/aws-modernization-with-docker/issues/new.
