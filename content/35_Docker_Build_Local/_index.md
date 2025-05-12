@@ -313,7 +313,7 @@ docker rm rent-a-room-container
 
 ---
 
-{{% notice tip %}}
+{{% notice warning %}}
 **Next Steps**
 
 You've completed the Docker Build Local section! 
