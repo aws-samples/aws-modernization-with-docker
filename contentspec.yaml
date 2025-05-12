@@ -57,6 +57,8 @@ awsAccountConfig:
         - ec2.amazonaws.com
         - codebuild.amazonaws.com
         - lambda.amazonaws.com
+        - elasticloadbalancing.amazonaws.com
+        - ecs.amazonaws.com
   regionConfiguration:
     minAccessibleRegions: 1
     maxAccessibleRegions: 3
