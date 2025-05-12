@@ -313,17 +313,15 @@ docker rm rent-a-room-container
 
 ---
 
-{{% notice warning %}}
-**Next Steps**
-
+### ⚠️ Important: Next Steps
+ 
 You've completed the Docker Build Local section! 
 
 To continue with the workshop:
-* ⚠️ **DO NOT** click the "Next" arrow (which leads to Docker Build Cloud)
-* ✅ Instead, click here to go directly to [Docker Scout – Introduction](../50_Docker_Scout/)
+* 🛑 **DO NOT** click the "Next" arrow (which leads to Docker Build Cloud)
+* ✅ Instead, [**Click Here to Continue to Docker Scout**](../50_Docker_Scout/)
 
 This ensures you follow the correct path and don't duplicate the build process.
-{{% /notice %}}
 
 ---
 
