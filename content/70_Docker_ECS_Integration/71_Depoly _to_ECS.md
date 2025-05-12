@@ -151,21 +151,22 @@ aws ecs create-cluster --cluster-name rent-a-room-cluster
 
 1. In ECS console, go to **Task Definitions**
 2. Click **Create new Task Definition**
-3. Configure settings:
+3. Configure settings(Leave other fields to default values):
    ```
    Family: rent-a-room-task
    Launch type: FARGATE
-   Task Role: ecsTaskExecutionRole
-   Task memory: 0.5GB
-   Task CPU: 0.25 vCPU
+   Operating system/Architecture: Linux/ARM64
+   Task Role: ecsTaskExecutionRole (⚠️ if not in dropdown, just leave it to "None")
+   Task memory: 3GB
+   Task CPU: 1 vCPU
    ```
-4. Add container:
+4. Add container( ⚠️ Be sure to replace the image prefix with your DockerHub Username below):
    ```
    Container name: rent-a-room
    Image: YOUR_DOCKERHUB_USERNAME/rent-a-room:latest
    Port mappings: 80
    ```
-5. Click **Create**
+6. Click **Create**
 
 ### Using AWS CLI:
 
@@ -206,19 +207,26 @@ aws ecs register-task-definition --cli-input-json file://task-definition.json
 
 ### Using AWS Console:
 
-1. In your cluster, click **Create Service**
+1. In your cluster, click [**Create Service**](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/create-service)
 2. Configure service:
    ```
+   Task Definition family: rent-a-room-task
+   Service name: rent-a-room-service (⚠️ System with automatically add random string to end. Delete the addtional characters so the service name reamins "rent-a-room-service")
    Launch type: FARGATE
-   Service name: rent-a-room-service
-   Task Definition: rent-a-room-task
-   Number of tasks: 1
+   Platform Version: LATEST
+   Service Type: Replica
+   Desired Tasks: 1
    ```
 3. Configure networking:
    ```
    VPC: Default VPC
-   Subnets: Select all available
-   Security group: Create new (Allow inbound port 80)
+   Subnets: Select all available (No need to change this)
+   Security group: Create new
+   Security Group Name: ecs-rent-a-room-sg
+   Type: Custom TCP
+   Port Range: 80
+   Values: Your IP Address/32 (To obtain your Personal IP address, [Navigate here](checkip.amazonaws.com), you will need to add /32 to the end of the vaule you see on the webpage. ex. 123.123.123.123/32)
+   ⚠️ If this addess is incorrect, you will not be able to access the ECS Service!
    ```
 4. Click **Create Service**
 
@@ -266,10 +274,11 @@ aws ecs create-service \
 
 ### Using AWS Console:
 
-1. In the [Amazon ECS console](https://console.aws.amazon.com/ecs/), navigate to your service
+1. In the [Amazon ECS console](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/services/rent-a-room-task-service/tasks/), navigate to your task
 2. Click on the running task
-3. Find the **Public IP**
+3. In the **Configuration** Section, find the **Public IP** 
 4. Access your application: `http://[PUBLIC_IP]`
+⚠️ Please be sure to connect via http and not https. If you still cannot connect, go to the [**Service**](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/services/rent-a-room-task-service/configuration), Under Network Configuration, Click on the **Security Group**, then click on **Edit inbound rules** -> Click the **Source** Dropdown and select **My IP**. Try to access the Task IP address again and you should be able to access the ECS Task. If you still have trouble, be sure that you have the correct image name, tag and that you have replaced the "YOUR_DOCKERHUB_USERNAME/rent-a-room:latest" with your actual DockerHub Username).
 
 ### Using AWS CLI:
 
