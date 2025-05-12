@@ -117,10 +117,10 @@ In this section, we will:
 1. Open the [Amazon ECS console](https://console.aws.amazon.com/ecs/)
 2. Click **Create Cluster**
 3. Select **AWS Fargate** (Serverless)
-4. Configure basic settings:
+4. Configure basic settings(Leave everything else to default values):
    ```
    Cluster Name: rent-a-room-cluster
-   VPC: Default VPC
+
    ```
 5. Click **Create**
 
