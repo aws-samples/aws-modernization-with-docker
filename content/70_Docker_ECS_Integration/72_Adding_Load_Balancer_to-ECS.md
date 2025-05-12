@@ -217,6 +217,8 @@ aws elbv2 create-listener \
 
 #### Using AWS CLI (Recommended Method):
 
+Note: The AWS Console doesn't allow adding a load balancer to an existing ECS service. You would need to delete the existing service and create a new one with load balancer settings. We recommend using the CLI command below in your VS Code Server terminal instead.
+
 ```bash
 # Get target group ARN
 TG_ARN=$(aws elbv2 describe-target-groups \
@@ -232,50 +234,14 @@ aws ecs update-service \
     --force-new-deployment
 ```
 
-#### Using AWS Console (Alternative Method):
-
-The AWS Console doesn't allow adding a load balancer to an existing service. You must delete the existing service and create a new one:
-
-1. **Delete the existing service**:
-   - Go to the [ECS console](https://console.aws.amazon.com/ecs/)
-   - Select your cluster **rent-a-room-cluster**
-   - Check the box next to **rent-a-room-service**
-   - Click **Delete**
-   - Uncheck **Force delete service**
-   - Type **delete** in the confirmation field
-   - Click **Delete**
-   - Wait for the service to be deleted (this may take a few minutes)
-
-2. **Create a new service with load balancer**:
-   - Click **Create**
-   - Configure the new service:
-     ```
-     Launch type: FARGATE
-     Task definition: rent-a-room-task
-     Revision: Latest
-     Service name: rent-a-room-service
-     Desired tasks: 1
-     ```
-   - Click **Next**
-   - Configure networking settings
-   - Under **Load balancing**:
-     - Select **Application Load Balancer**
-     - For **Target group name**, select **rent-a-room-tg**
-     - For **Container to load balance**, select your container
-     - Set container port to **80**
-   - Complete service creation
-
-> **Note**: Using the CLI method above is simpler and doesn't require service deletion.
-
 ### **4️⃣ Access Your Application Through the Load Balancer**
 
 #### Using AWS Console:
-1. Go to the [EC2 console](https://console.aws.amazon.com/ec2/)
-2. Navigate to **Load Balancers**
-3. Select your load balancer **rent-a-room-alb**
-4. Copy the **DNS name**
-5. Access your application: `http://[DNS_NAME]`
-6. NOTE: This will take a few minutes to propgate and accept traffic. 
+1. Go to the [Load Balancers in the Console](https://console.aws.amazon.com/ec2/#LoadBalancers)
+2. Select your load balancer **rent-a-room-alb**
+3. Copy the **DNS name**
+4. Access your application: `http://[DNS_NAME]`
+5. NOTE: This will take a few minutes to propgate and accept traffic due to the service redeploying. 
 
 #### Using AWS CLI:
 ```bash
