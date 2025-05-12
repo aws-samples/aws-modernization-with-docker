@@ -4,17 +4,16 @@ chapter: true
 weight: 36
 ---
 
-{{% notice warning %}}
-**Path Selection**
+{{% notice info %}}
+### Next Steps
 
-* If you completed the **Docker Build - Local** section:
-  * ✋ Skip this entire Docker Build Cloud section
-  * ➡️ Proceed directly to [Docker Scout – Introduction](../50_Docker_Scout/)
+You've completed the Docker Build Local section! 
 
-* If you haven't done any Docker builds yet:
-  * ✅ Continue with this Docker Build Cloud section
+To continue with the workshop:
+* ⚠️ **DO NOT** click the "Next" arrow (which leads to Docker Build Cloud)
+* ✅ Instead, [**Click Here to Continue to Docker Scout**](../50_Docker_Scout/)
 
-This ensures you follow a single consistent path through the workshop.
+This ensures you follow the correct path and don't duplicate the build process.
 {{% /notice %}}
 
 ## **Docker Build Cloud: Overview**
