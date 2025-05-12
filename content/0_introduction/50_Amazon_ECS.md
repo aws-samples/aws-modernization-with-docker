@@ -4,7 +4,7 @@ chapter = false
 weight = 50
 +++
 
-![Docker] (/images/docker-ecs-overview.png)
+![Docker](/images/docker-ecs-overview.png)
 
 ### What is Amazon ECS?
 
