@@ -149,7 +149,9 @@ aws elbv2 create-target-group \
    ```
    Create new security group
    Name: rent-a-room-alb-sg
+   Description: Allows access from anywhere
    Rule: Allow HTTP (port 80) from anywhere
+   Go back to the Load Balancers and Select the rent-a-room-alb-sg
    ```
 7. Configure listeners and routing:
    ```
@@ -158,6 +160,7 @@ aws elbv2 create-target-group \
    Default action: Forward to rent-a-room-tg
    ```
 8. Click **Create load balancer**
+   Note: This will take a few minutes for the Loadbalancer to accept traffic
 
 #### Using AWS CLI:
 ```bash
@@ -208,23 +211,12 @@ aws elbv2 create-listener \
     --default-actions Type=forward,TargetGroupArn=$TG_ARN
 ```
 
+
+
 ### **3️⃣ Update ECS Service to Use the Load Balancer**
 
-#### Using AWS Console:
-1. Go to the [ECS console](https://console.aws.amazon.com/ecs/)
-2. Select your cluster **rent-a-room-cluster**
-3. Select your service **rent-a-room-service**
-4. Click **Update**
-5. Under **Load balancing**:
-   ```
-   Load balancer type: Application Load Balancer
-   Target group name: rent-a-room-tg
-   Container name: rent-a-room
-   Container port: 80
-   ```
-6. Click **Update Service**
+#### Using AWS CLI (Recommended Method):
 
-#### Using AWS CLI:
 ```bash
 # Get target group ARN
 TG_ARN=$(aws elbv2 describe-target-groups \
@@ -239,6 +231,41 @@ aws ecs update-service \
     --load-balancers "targetGroupArn=$TG_ARN,containerName=rent-a-room,containerPort=80" \
     --force-new-deployment
 ```
+
+#### Using AWS Console (Alternative Method):
+
+The AWS Console doesn't allow adding a load balancer to an existing service. You must delete the existing service and create a new one:
+
+1. **Delete the existing service**:
+   - Go to the [ECS console](https://console.aws.amazon.com/ecs/)
+   - Select your cluster **rent-a-room-cluster**
+   - Check the box next to **rent-a-room-service**
+   - Click **Delete**
+   - Uncheck **Force delete service**
+   - Type **delete** in the confirmation field
+   - Click **Delete**
+   - Wait for the service to be deleted (this may take a few minutes)
+
+2. **Create a new service with load balancer**:
+   - Click **Create**
+   - Configure the new service:
+     ```
+     Launch type: FARGATE
+     Task definition: rent-a-room-task
+     Revision: Latest
+     Service name: rent-a-room-service
+     Desired tasks: 1
+     ```
+   - Click **Next**
+   - Configure networking settings
+   - Under **Load balancing**:
+     - Select **Application Load Balancer**
+     - For **Target group name**, select **rent-a-room-tg**
+     - For **Container to load balance**, select your container
+     - Set container port to **80**
+   - Complete service creation
+
+> **Note**: Using the CLI method above is simpler and doesn't require service deletion.
 
 ### **4️⃣ Access Your Application Through the Load Balancer**
 
