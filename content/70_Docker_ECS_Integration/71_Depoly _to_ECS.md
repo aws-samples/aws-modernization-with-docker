@@ -157,8 +157,9 @@ aws ecs create-cluster --cluster-name rent-a-room-cluster
    Launch type: FARGATE
    Operating system/Architecture: Linux/ARM64
    Task Role: ecsTaskExecutionRole (⚠️ if not in dropdown, just leave it to "None")
-   Task memory: 3GB
    Task CPU: 1 vCPU
+   Task memory: 3GB
+  
    ```
 4. Add container( ⚠️ Be sure to replace the image prefix with your DockerHub Username below):
    ```
