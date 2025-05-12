@@ -92,12 +92,19 @@ The ECS service configured to register tasks with the target group automatically
    ```
    Target type: IP addresses
    Target group name: rent-a-room-tg
-   Protocol: HTTP
-   Port: 80
+   Protocol: HTTP Port: 80
+   Ip address type: IPv4
    VPC: Default VPC
+   Protocol version: HTTP1
+   Health check protocol: HTTP
    Health check path: /
    ```
-5. Click **Next**, then **Create target group**
+5. Click **Next**
+6. On the "Register targets" screen:
+- ⚠️ **Important**: Do NOT add any IP addresses
+- If you see any IP addresses listed, click "Remove"
+- Click "Create target group"
+**Note**: For ECS services, targets (task IPs) are registered automatically. You should create an empty target group and let ECS handle the registration.
 
 #### Using AWS CLI:
 ```bash
