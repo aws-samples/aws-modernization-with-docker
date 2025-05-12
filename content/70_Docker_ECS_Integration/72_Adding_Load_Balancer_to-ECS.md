@@ -85,28 +85,6 @@ The ECS service configured to register tasks with the target group automatically
 
 ### **1️⃣ Create a Target Group**
 
-#### Using AWS Console:
-1. Navigate to **Target Groups** in the [EC2 console](https://console.aws.amazon.com/ec2/home#TargetGroups)
-3. Click **Create target group**
-4. Configure settings:
-   ```
-   Target type: IP addresses
-   Target group name: rent-a-room-tg
-   Protocol: HTTP Port: 80
-   Ip address type: IPv4
-   VPC: Default VPC
-   Protocol version: HTTP1
-   Health check protocol: HTTP
-   Health check path: /
-   ```
-5. Click **Next**
-6. On the "Register targets" screen:
-- ⚠️ **Important**: Do NOT add any IP addresses
-- If you see any IP addresses listed, click "Remove"
-- Click "Create target group"
-**Note**: For ECS services, targets (task IPs) are registered automatically. You should create an empty target group and let ECS handle the registration.
-
-#### Using AWS CLI:
 ```bash
 # Get default VPC ID
 VPC_ID=$(aws ec2 describe-vpcs \
@@ -130,39 +108,6 @@ aws elbv2 create-target-group \
 
 ### **2️⃣ Create an Application Load Balancer**
 
-#### Using AWS Console:
-1. In the EC2 console, navigate to [**Load Balancers**](http://console.aws.amazon.com/ec2/home#LoadBalancers)
-2. Click **Create load balancer**
-3. Choose **Application Load Balancer**
-4. Configure basic settings:
-   ```
-   Name: rent-a-room-alb
-   Scheme: Internet-facing
-   IP address type: IPv4
-   ```
-5. Configure network:
-   ```
-   VPC: Default VPC
-   Mappings: Select all available subnets
-   ```
-6. Configure security groups:
-   ```
-   Create new security group
-   Name: rent-a-room-alb-sg
-   Description: Allows access from anywhere
-   Rule: Allow HTTP (port 80) from anywhere
-   Go back to the Load Balancers and Select the rent-a-room-alb-sg
-   ```
-7. Configure listeners and routing:
-   ```
-   Protocol: HTTP
-   Port: 80
-   Default action: Forward to rent-a-room-tg
-   ```
-8. Click **Create load balancer**
-   Note: This will take a few minutes for the Loadbalancer to accept traffic
-
-#### Using AWS CLI:
 ```bash
 # Create security group for ALB
 ALB_SG_ID=$(aws ec2 create-security-group \
@@ -215,10 +160,6 @@ aws elbv2 create-listener \
 
 ### **3️⃣ Update ECS Service to Use the Load Balancer**
 
-#### Using AWS CLI (Recommended Method):
-
-Note: The AWS Console doesn't allow adding a load balancer to an existing ECS service. You would need to delete the existing service and create a new one with load balancer settings. We recommend using the CLI command below in your VS Code Server terminal instead.
-
 ```bash
 # Get target group ARN
 TG_ARN=$(aws elbv2 describe-target-groups \
@@ -241,7 +182,7 @@ aws ecs update-service \
 2. Select your load balancer **rent-a-room-alb**
 3. Copy the **DNS name**
 4. Access your application: `http://[DNS_NAME]`
-5. NOTE: This will take a few minutes to propgate and accept traffic due to the service redeploying. 
+5. NOTE: This will take a few minutes to propagate and accept traffic due to the service redeploying. 
 
 #### Using AWS CLI:
 ```bash
