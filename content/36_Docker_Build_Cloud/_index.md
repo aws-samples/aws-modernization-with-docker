@@ -4,6 +4,19 @@ chapter: true
 weight: 36
 ---
 
+{{% notice warning %}}
+**Path Selection**
+
+* If you completed the **Docker Build - Local** section:
+  * ✋ Skip this entire Docker Build Cloud section
+  * ➡️ Proceed directly to [Docker Scout – Introduction](../50_Docker_Scout/)
+
+* If you haven't done any Docker builds yet:
+  * ✅ Continue with this Docker Build Cloud section
+
+This ensures you follow a single consistent path through the workshop.
+{{% /notice %}}
+
 ## **Docker Build Cloud: Overview**
 
 Docker Build Cloud is a powerful remote build service that accelerates container image creation by offloading build operations to Docker's cloud infrastructure.
