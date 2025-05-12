@@ -25,7 +25,7 @@ Virtual machines (VMs) are an abstraction of physical hardware turning one serve
 ### Containers 
 Containers are an abstraction at the app layer that packages code and dependencies together. Multiple containers can run on the same machine and share the OS kernel with other containers, each running as isolated processes in user space. Containers take up less space than VMs (container images are typically tens of MBs in size), can handle more applications and require fewer VMs and Operating systems.
 
-![Docker](images/docker-containerized-appliction-blue-border_2.png)
+![Docker](/images/docker-containerized-appliction-blue-border_2.png)
 
 ### Summary
 The main take away here is that by **abstracting** away the heavy lifting of application and hardware dependencies in order for you to be effective as a developer you gain the following benefits:
