@@ -421,4 +421,4 @@ docker rm rent-a-room-container
 - **Time savings compound** with each build, resulting in substantial productivity improvements over time.
 - **Pushing to Docker Hub** makes your images available anywhere.
 
-In the next section, we will explore how to utilize **Code Pipeline with Docker**.
+In the next section, we will explore how to utilize **Docker Scout**.
