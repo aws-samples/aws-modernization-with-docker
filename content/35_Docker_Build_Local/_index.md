@@ -313,6 +313,20 @@ docker rm rent-a-room-container
 
 ---
 
+{{% notice tip %}}
+**Next Steps**
+
+You've completed the Docker Build Local section! 
+
+To continue with the workshop:
+* ⚠️ **DO NOT** click the "Next" arrow (which leads to Docker Build Cloud)
+* ✅ Instead, click here to go directly to [Docker Scout – Introduction](../50_Docker_Scout/)
+
+This ensures you follow the correct path and don't duplicate the build process.
+{{% /notice %}}
+
+---
+
 ## **Summary**
 
 - **Docker Build Local** uses your machine's resources to build container images.
@@ -321,4 +335,4 @@ docker rm rent-a-room-container
 - **Docker Hub integration** allows for sharing and reusing images.
 - **Pushing to Docker Hub** makes your images available anywhere.
 
-In the next section, we will explore how to utilize **Code Pipeline with Docker**.
+In the next section, we will explore how to utilize **Docker Scout**.
