@@ -211,7 +211,7 @@ aws ecs register-task-definition --cli-input-json file://task-definition.json
 2. Configure service:
    ```
    Task Definition family: rent-a-room-task
-   Service name: rent-a-room-service (⚠️ System with automatically add random string to end. Delete the addtional characters so the service name reamins "rent-a-room-service")
+   Service name: rent-a-room-service (⚠️ System with automatically add task-random string to end. Delete the entire text and paste "rent-a-room-service")
    Launch type: FARGATE
    Platform Version: LATEST
    Service Type: Replica
