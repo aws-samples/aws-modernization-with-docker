@@ -50,7 +50,6 @@ awsAccountConfig:
       - "arn:aws:iam::aws:policy/AmazonQDeveloperAccess"
       - "arn:aws:iam::aws:policy/AWSCodeCommitPowerUser"
       - "arn:aws:iam::aws:policy/AWSServiceRoleForECS"
-      - "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
       
     trustedPrincipals:
       service:
