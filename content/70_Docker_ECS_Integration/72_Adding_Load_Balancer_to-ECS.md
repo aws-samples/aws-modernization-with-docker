@@ -83,6 +83,8 @@ The ECS service configured to register tasks with the target group automatically
 
 ## **📝 Implementation Steps**
 
+In the following section, use the **VS-Code Server** to enter these commands.
+
 ### **1️⃣ Create a Target Group**
 
 ```bash
@@ -117,12 +119,25 @@ ALB_SG_ID=$(aws ec2 create-security-group \
     --query 'GroupId' \
     --output text)
 
-# Allow inbound HTTP
+# Allow inbound HTTP from anywhere
 aws ec2 authorize-security-group-ingress \
     --group-id $ALB_SG_ID \
     --protocol tcp \
     --port 80 \
     --cidr 0.0.0.0/0
+
+# Get the ECS service security group ID
+ECS_SG_ID=$(aws ec2 describe-security-groups \
+    --filters Name=group-name,Values=ecs-rent-a-room-sg \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text)
+
+# Update ECS security group to allow traffic from ALB
+aws ec2 authorize-security-group-ingress \
+    --group-id $ECS_SG_ID \
+    --protocol tcp \
+    --port 80 \
+    --source-group $ALB_SG_ID
 
 # Get subnet IDs
 SUBNET_IDS=$(aws ec2 describe-subnets \
@@ -166,6 +181,19 @@ TG_ARN=$(aws elbv2 describe-target-groups \
     --names rent-a-room-tg \
     --query 'TargetGroups[0].TargetGroupArn' \
     --output text)
+
+# Get the ECS service security group ID
+ECS_SG_ID=$(aws ec2 describe-security-groups \
+    --filters Name=group-name,Values=ecs-rent-a-room-sg \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text)
+
+# Update ECS security group to allow traffic from ALB if not already done
+aws ec2 authorize-security-group-ingress \
+    --group-id $ECS_SG_ID \
+    --protocol tcp \
+    --port 80 \
+    --source-group $ALB_SG_ID 2>/dev/null || echo "Rule already exists"
 
 # Update the service to use the load balancer
 aws ecs update-service \
@@ -265,7 +293,11 @@ After completing the setup, verify everything is working properly:
 ### 1. **Check Target Health**
 Navigate to EC2 → Target Groups → Select your target group → Targets tab
 * ✅ Status should be "healthy" for your tasks
-* ❌ If "unhealthy," check your health check settings and container configuration
+* ❌ If "unhealthy," check your security group settings and container configuration
+
+:::alert{header="Important" type="warning"}
+If your targets remain unhealthy, verify that you've updated the ECS security group to allow traffic from the load balancer. The security group created in the previous section only allows traffic from your IP address, but the load balancer needs permission to reach your tasks.
+:::
 
 ### 2. **Check Load Balancer Listener**
 Navigate to EC2 → Load Balancers → Select your ALB → Listeners tab
@@ -281,16 +313,32 @@ Navigate to ECS → Clusters → Your cluster → Services → Your service → 
 1. **Tasks aren't registering with target group**
    * Ensure container port in task definition matches target group port
    * Check if security groups allow traffic between ALB and tasks
+   * Verify that you've updated the ECS security group to allow inbound traffic from the ALB security group
 
 2. **Health checks failing**
    * Verify health check path exists in your application
    * Ensure container is listening on the correct port
-   * Check security groups allow health check traffic
+   * Check security groups allow health check traffic from the ALB to the ECS tasks
 
 3. **Cannot access application via load balancer**
    * Verify load balancer security group allows inbound traffic
    * Check if load balancer is in the same VPC as your tasks
    * Ensure target group has healthy targets
+   * Run the following command to verify security group settings:
+   
+   ```bash
+   # Check ECS security group inbound rules
+   ECS_SG_ID=$(aws ec2 describe-security-groups \
+       --filters Name=group-name,Values=ecs-rent-a-room-sg \
+       --query 'SecurityGroups[0].GroupId' \
+       --output text)
+   
+   echo "ECS Security Group inbound rules:"
+   aws ec2 describe-security-groups \
+       --group-ids $ECS_SG_ID \
+       --query 'SecurityGroups[0].IpPermissions' \
+       --output table
+   ```
 
 ## **📈 Scaling Your Application**
 

@@ -151,6 +151,9 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
         PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: DOCKER_CONFIG
+            Value: /root/.docker
       Source:
         Type: CODEPIPELINE
         BuildSpec: |
@@ -160,6 +163,9 @@ Resources:
             secrets-manager:
               DOCKER_USERNAME: "dockerhub-credentials:DOCKER_USERNAME"
               DOCKER_TOKEN: "dockerhub-credentials:DOCKER_TOKEN"
+            variables:
+              BUILDX_VERSION: "v0.11.2"
+              BUILDX_BINARY_URL: "https://github.com/docker/buildx/releases/download/v0.11.2/buildx-v0.11.2.linux-arm64"
 
           phases:
             pre_build:
@@ -169,26 +175,25 @@ Resources:
                 - echo Setting up Docker Buildx...
                 - docker version
                 - mkdir -p ~/.docker/cli-plugins/
-                - curl -SL https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-arm64 -o ~/.docker/cli-plugins/docker-buildx
+                - echo "Downloading Docker Buildx binary from $BUILDX_BINARY_URL"
+                - curl -L -o ~/.docker/cli-plugins/docker-buildx $BUILDX_BINARY_URL
                 - chmod +x ~/.docker/cli-plugins/docker-buildx
-                - docker buildx version
-                - docker buildx create --name mybuilder --driver docker-container
-                - docker buildx use mybuilder
-                - docker buildx inspect --bootstrap
+                - ls -la ~/.docker/cli-plugins/
+                - export PATH=~/.docker/cli-plugins:$PATH
+                - echo "Testing buildx binary..."
+                - ~/.docker/cli-plugins/docker-buildx version
                 - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
                 - IMAGE_TAG=${COMMIT_HASH:=latest}
             
             build:
               commands:
-                - echo Building Docker image using BuildKit...
-                # Build only for arm64 to match the task definition's ARM64 architecture
-                - docker buildx build --platform linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest -t $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --push .
+                - echo Building Docker image...
+                - ~/.docker/cli-plugins/docker-buildx build --platform linux/arm64 -t $DOCKER_USERNAME/rent-a-room:latest -t $DOCKER_USERNAME/rent-a-room:$IMAGE_TAG --push .
             
             post_build:
               commands:
                 - echo Docker image pushed to Docker Hub
                 - echo Writing image definitions file...
-                # This format matches what ECS deployment expects
                 - echo '[{"name":"rent-a-room","imageUri":"'$DOCKER_USERNAME/rent-a-room:$IMAGE_TAG'"}]' > imagedefinitions.json
 
           artifacts:
@@ -208,6 +213,9 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-aarch64-standard:2.0
         PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: DOCKER_CONFIG
+            Value: /root/.docker
       Source:
         Type: CODEPIPELINE
         BuildSpec: |

@@ -294,7 +294,7 @@ aws ecs create-service \
 3. In the **Networking** Section, find the **Public IP** and click on **open address**
 4. Access your application: `http://[PUBLIC_IP]`
 
-⚠️ Please be sure to connect via http and not https. If you still cannot connect, go to the [**Service**](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/services/rent-a-room-service/configuration), Under Network Configuration, Click on the **Security Group**, then click on **Edit inbound rules** -> Click the **Source** Dropdown and select **My IP**. Try to access the Task IP address again and you should be able to access the ECS Task. If you still have trouble, be sure that you have the correct image name, tag and that you have replaced the "YOUR_DOCKERHUB_USERNAME/rent-a-room:latest" with your actual DockerHub Username).
+⚠️ Please be sure to connect via http and not https. If you still cannot connect, go to the [**Service**](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/services/rent-a-room-service/configuration), Under Network Configuration, Click on the **Security Group**, then click on **Edit inbound rules** -> Click the **Source** Dropdown and select **My IP**. Try to access the Task IP address again and you should be able to access the ECS Task. If you still have trouble, be sure that you have the correct image name, tag and that you have replaced the "YOUR_DOCKERHUB_USERNAME/rent-a-room\:latest" with your actual DockerHub Username).
 
 ### Using AWS CLI:
 
