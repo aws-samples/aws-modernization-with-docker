@@ -236,13 +236,13 @@ aws ecs register-task-definition --cli-input-json file://task-definition.json
    ```bash
    ecs-rent-a-room-sg
    ```
-   ```
-   Type: Custom TCP
-   Port Range: 80
-   Source: Custom
-   Values: Your IP Address/32 (To obtain your Personal IP address, [Navigate here](checkip.amazonaws.com), you will need to add /32 to the end of the vaule you see on the webpage. ex. 123.123.123.123/32)
-   ⚠️ If this addess is incorrect, you will not be able to access the ECS Service!
-   ```
+
+Type: Custom TCP
+Port Range: 80
+Source: Custom
+Values: Your IP Address/32 (To obtain your Personal IP address, [Navigate here](checkip.amazonaws.com), you will need to add /32 to the end of the value you see on the webpage. ex. 123.123.123.123/32)
+⚠️ If this addess is incorrect, you will not be able to access the ECS Service!
+
 4. Click **Create Service**
 
 ### Using AWS CLI:
@@ -291,8 +291,9 @@ aws ecs create-service \
 
 1. In the [Amazon ECS console](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/services/rent-a-room-service/tasks/), navigate to your task
 2. Click on the running task
-3. In the **Configuration** Section, find the **Public IP** and click on **open address**
+3. In the **Networking** Section, find the **Public IP** and click on **open address**
 4. Access your application: `http://[PUBLIC_IP]`
+
 ⚠️ Please be sure to connect via http and not https. If you still cannot connect, go to the [**Service**](https://console.aws.amazon.com/ecs/v2/clusters/rent-a-room-cluster/services/rent-a-room-service/configuration), Under Network Configuration, Click on the **Security Group**, then click on **Edit inbound rules** -> Click the **Source** Dropdown and select **My IP**. Try to access the Task IP address again and you should be able to access the ECS Task. If you still have trouble, be sure that you have the correct image name, tag and that you have replaced the "YOUR_DOCKERHUB_USERNAME/rent-a-room:latest" with your actual DockerHub Username).
 
 ### Using AWS CLI:
