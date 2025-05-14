@@ -26,7 +26,31 @@ export DOCKER_TOKEN="'$(read -s -p "Enter Docker Hub token: " token; echo $token
 source ~/.bashrc
 ```
 
-To push and pull images from Docker Hub, log in via CLI:
+:::alert{header="Important" type="warning"}
+When entering your Docker Hub token, the input will be **hidden** for security reasons. This is normal behavior - your token is being captured correctly even though you don't see any characters on screen. Please type your token carefully and only press Enter once when complete to avoid multiple entries.
+:::
+
+### **🔹 Verify Your Credentials Before Login**
+
+Let's verify your credentials were captured correctly before attempting to log in:
+
+```bash
+# This will show only the first 4 characters of your token followed by asterisks
+echo "Username: $DOCKER_USERNAME"
+echo "Token: ${DOCKER_TOKEN:0:4}$(printf '%*s' $((${#DOCKER_TOKEN}-4)) | tr ' ' '*')"
+```
+
+:::alert{header="Troubleshooting" type="info"}
+If the username is incorrect or the token appears empty, you can reset them with these commands:
+
+```bash
+# Only run this if you need to reset your credentials
+export DOCKER_USERNAME=$(read -p "Enter Docker Hub username: " username; echo $username)
+export DOCKER_TOKEN=$(read -s -p "Enter Docker Hub token: " token; echo $token)
+```
+:::
+
+Now, let's log in to Docker Hub:
 
 ```bash
 docker login -u $DOCKER_USERNAME -p $DOCKER_TOKEN
