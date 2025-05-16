@@ -237,7 +237,7 @@ aws ecs register-task-definition --cli-input-json file://task-definition.json
    ecs-rent-a-room-sg
    ```
    ```
-   Type: Custom TCP
+   Type: Select `HTTP`
    Port Range: 80
    Source: Custom
    ```
