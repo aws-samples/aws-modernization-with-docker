@@ -236,12 +236,13 @@ aws ecs register-task-definition --cli-input-json file://task-definition.json
    ```bash
    ecs-rent-a-room-sg
    ```
-
-Type: Custom TCP
-Port Range: 80
-Source: Custom
-Values: Your IP Address/32 (To obtain your Personal IP address, [Navigate here](checkip.amazonaws.com), you will need to add /32 to the end of the value you see on the webpage. ex. 123.123.123.123/32)
-⚠️ If this addess is incorrect, you will not be able to access the ECS Service!
+   ```
+   Type: Custom TCP
+   Port Range: 80
+   Source: Custom
+   ```
+  Values: Your IP Address/32 (To obtain your Personal IP address, [Navigate here](http://checkip.amazonaws.com), you will need to add /32 to the end of the value you see on the webpage. ex. 123.123.123.123/32)
+  ⚠️ If this addess is incorrect, you will not be able to access the ECS Service!
 
 4. Click **Create Service**
 
