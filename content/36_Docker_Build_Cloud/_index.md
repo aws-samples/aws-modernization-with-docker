@@ -155,7 +155,7 @@ Update both package.json and App.js to handle different environments:
 
 ```bash
 # Add environment check before the return statement in App.js
-sed -i '/function App() {/a\  const isVSCodeServer = window.location.href.includes('\''cloudfront.net'\'');\n  const basename = isVSCodeServer ? '\''/proxy/3000'\'' : '\''/'\'';' src/App.js
+sed -i '/function App() {/a\  const isVSCodeServer = window.location.href.includes('\''cloudfront.net'\'');\n  const basename = isVSCodeServer ? '\''/proxy/3000/'\'' : '\''/'\'';' src/App.js
 
 # Update Router to use basename
 sed -i '/<[Rr]outer>/s/>/\ basename={basename}>/g' src/App.js
