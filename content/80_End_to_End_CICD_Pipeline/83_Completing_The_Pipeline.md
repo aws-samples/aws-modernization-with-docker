@@ -404,8 +404,9 @@ cd ..
 You can also view the results directly in the Docker Scout dashboard:
 
 1. Navigate to the Docker Scout dashboard: https://scout.docker.com/
-2. Find your `rent-a-room` repository
-3. Review the security scan results:
+2. Select your Dockerhub profile
+4. Find your `rent-a-room` repository
+5. Review the security scan results:
    - Vulnerability summary
    - Package details
    - Recommended fixes
