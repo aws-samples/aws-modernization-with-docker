@@ -770,7 +770,7 @@ This time, the pipeline should complete successfully, including the Security Sca
 
 Let's see the impact of the Room Listings team's changes. You can see the updated website by refreshing the previous webpage or by running the following command to get the link to the hosted website:
 
-```
+```bash
 # Get the load balancer DNS name
 ALB_DNS=$(aws elbv2 describe-load-balancers \
     --names rent-a-room-alb \
