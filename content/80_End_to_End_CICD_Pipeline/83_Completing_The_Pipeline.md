@@ -252,7 +252,7 @@ git push origin main
 After pushing your changes, navigate to the AWS CodePipeline console to watch your pipeline execute:
 
 ```bash
-https://console.aws.amazon.com/codepipeline/home
+echo $PIPELINE_URL
 ```
 
 You'll see the pipeline progress through the Source, Build, Security Scan, and Deploy stages. This demonstrates how changes from the Home Page team flow through the pipeline independently.
@@ -358,7 +358,7 @@ git push origin main
 Navigate to the AWS CodePipeline console to watch your pipeline execute:
 
 ```bash
-https://console.aws.amazon.com/codepipeline/home
+echo $PIPELINE_URL
 ```
 
 You should see the pipeline start and progress through the Source and Build stages. However, when it reaches the Security Scan stage, it should fail because Docker Scout will detect critical and high severity vulnerabilities in the image.
@@ -760,7 +760,7 @@ git push origin main
 Navigate back to the AWS CodePipeline console to watch your pipeline execute with the secure Dockerfile and room listings enhancements:
 
 ```bash
-https://console.aws.amazon.com/codepipeline/home
+echo $PIPELINE_URL
 ```
 
 This time, the pipeline should complete successfully, including the Security Scan stage, and deploy the application to your ECS cluster.
