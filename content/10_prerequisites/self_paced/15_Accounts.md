@@ -53,7 +53,7 @@ Before deploying the templates, ensure the following:
 
    ![Create Stack Process](/images/cloudformation-create-process.png)  
 
-Once the stack status changes to `CREATE_COMPLETE`, the resources for the Neon RDS are ready.
+Once the stack status changes to `CREATE_COMPLETE`, the resources for workshop are ready.
 
 ---
 
