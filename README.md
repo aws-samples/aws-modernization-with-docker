@@ -221,11 +221,11 @@ To add a new section to the workshop:
 ```
 mkdir content/040_new_section
 ```
-3. Create an `_index.md` file in the new directory:
+2. Create an `_index.md` file in the new directory:
 ```
 touch content/040_new_section/_index.md
 ```
-5. Add the required front matter to the `_index.md` file:
+3. Add the required front matter to the `_index.md` file:
 ```markdown
 
 * * *
@@ -233,26 +233,45 @@ title: "New Section Title"    chapter: true    weight: 40
 * * *
 # New Section Title
 
-Introduction text for your new section...    ```
+Introduction text for your new section...
+```
 
-1. Create an images directory for section-specific images:    `    mkdir content/040_new_section/images`
-2. Add content pages with appropriate weights:    `    touch content/040_new_section/41_first_page.md    touch content/040_new_section/42_second_page.md`
+1. Create an images directory for section-specific images:
+```
+mkdir content/040_new_section/images
+```
+2. Add content pages with appropriate weights:
+```
+touch content/040_new_section/41_first_page.md
+touch content/040_new_section/42_second_page.md
+```
 
 ## Step 9: Referencing Images
 
 ### For Global Images:
 
-1. Place the image in the `static/images/` directory:    `static/images/architecture-diagram.png`
+1. Place the image in the `static/images/` directory:
+```
+static/images/architecture-diagram.png
+```
 2. Reference the image using an absolute path from the root:  
 
-`![Architecture Diagram](/images/architecture-diagram.png)`
+```
+![Architecture Diagram](/images/architecture-diagram.png)
+```
 
 ## Step 10: Making Content Changes
 
-1. Create a new branch for your changes:    `    git checkout -b feature/your-feature-name`
-2. Navigate to the content directory:    `    cd content`
+1. Create a new branch for your changes:
+```
+git checkout -b feature/your-feature-name
+```
+2. Navigate to the content directory:
+```
+cd content
+```
 3. Edit the Markdown files in the appropriate sections following the structure and front matter guidelines above.
-4. As you make changes, Hugo will automatically refresh the local server, allowing you to see your changes in real-time.
+4. . As you make changes, Hugo will automatically refresh the local server, allowing you to see your changes in real-time.
 
 ## Step 11: Preview Your Changes
 
@@ -268,16 +287,16 @@ git fetch upstream
 git merge upstream/main
 ```
 
-3. Commit your changes:
+2. Commit your changes:
 ```
 git add .
 git commit -m "Description of changes made"
 ```
-5. Push your branch to GitHub:
+3. Push your branch to GitHub:
 ```
 git push origin feature/your-feature-name
 ```
-7. Create a Pull Request:
+4. Create a Pull Request:
 
 ###  Using GitHub CLI:   
 ```
