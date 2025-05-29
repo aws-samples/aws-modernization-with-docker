@@ -33,10 +33,15 @@ brew install gh
 ### For Windows:
 
 ```
-winget install --id GitHub.cli
-# OR
 choco install gh
 ```
+
+# OR
+
+```
+winget install --id GitHub.cli
+```
+
 
 ### For Linux:
 
@@ -182,9 +187,22 @@ weight: 10
 
 ### Essential Front Matter Parameters:
 
-1. **title**: The page title displayed in the browser and navigation    `yaml    title: "Your Page Title"`
-2. **weight**: Controls the order of pages within a section (lower numbers appear first)    `yaml    weight: 10`
-3. **chapter**: Determines if the page is a chapter start (typically used in `_index.md` files)    `yaml    chapter: true  # For section landing pages    chapter: false # For regular content pages`
+1. **title**: The page title displayed in the browser and navigation
+```
+title: "Your Page Title"
+```
+4. **weight**: Controls the order of pages within a section (lower numbers appear first)
+```
+weight: 10
+```
+6. **chapter**: Determines if the page is a chapter start (typically used in `_index.md` files)
+```
+chapter: true  # For section landing pages
+```
+#OR
+```
+chapter: false # For regular content pages
+```
 
 ### Example of Section _index.md:
 
