@@ -8,7 +8,8 @@ This guide is designed for the Docker team to set up a local Hugo environment fo
 
 ## Workshop Details
 
-* **Workshop URL**: [AWS Modernization with Docker Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0be61c95-28ed-4670-a1fd-fcc32e6b4b11)
+* **Workshop Studio URL**: [AWS Modernization with Docker Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/0be61c95-28ed-4670-a1fd-fcc32e6b4b11)
+* **AWS Modernization Workshop URL**: [AWS Modernization with Docker Workshop](https://docker.awsworkshop.io/)
 * **Repository URL**: [GitHub - aws-samples/aws-modernization-with-docker](https://github.com/aws-samples/aws-modernization-with-docker)
 
 ## Prerequisites
